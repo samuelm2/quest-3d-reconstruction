@@ -4,8 +4,12 @@ import cv2
 
 
 class ImageRepository:
-    def __init__(self, image_dir: Path):
-        self.image_dir = image_dir
+    def __init__(
+        self, project_root: Path, 
+        image_subdir: str
+    ):
+        self.project_root = project_root
+        self.image_dir = project_root / image_subdir
 
 
     @property
@@ -17,8 +21,14 @@ class ImageRepository:
 
 
     def get_relaive_path(self, file_stem: str) -> str:
-        depth_map_path = self.depth_dir / f"{file_stem}.raw"
+        depth_map_path = self.image_dir / f"{file_stem}.raw"
         return depth_map_path.relative_to(self.project_root)
+    
+
+    def load(self, file_stem: str) -> np.ndarray:
+        image_path = self.image_dir / f"{file_stem}.png"
+        img_bgr = cv2.imread(image_path)
+        return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         
 
     def save(self, file_stem: str, image: np.ndarray):

@@ -22,7 +22,11 @@ def convert_depth_directory_to_linear(
             side=side,
             index=i,
             dataset=dataset,
+            validate_depth=True,
         )
+
+        if depth_map is None:
+            continue
 
         linear_depth_map = (depth_map - clip_near) / (clip_far - clip_near) * 255.0
         depth_grey_repo.save(file_stem=timestamp, image=linear_depth_map)

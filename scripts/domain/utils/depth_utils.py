@@ -13,7 +13,7 @@ def compute_depth_camera_params(
     fy = height / (top + bottom)
 
     cx = width * left / (right + left)
-    cy = height * bottom / (top + bottom)
+    cy = height * top / (top + bottom)
 
     return fx, fy, cx, cy
 
@@ -30,7 +30,13 @@ def compute_ndc_to_linear_depth_params(near, far):
 
 def to_linear_depth(d, x, y):
     ndc = d * 2.0 - 1.0
-    return x / (ndc + y)
+    denom = ndc + y
+
+    return np.divide(
+        x, denom,
+        out=np.zeros_like(d),
+        where=denom != 0
+    )
 
 
 def convert_depth_to_linear(depth_buffer: np.ndarray, near: float, far: float):

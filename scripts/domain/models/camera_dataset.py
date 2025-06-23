@@ -22,6 +22,11 @@ class CameraDataset:
     heights: np.ndarray
 
 
+    def __post_init__(self):
+        length = len(self.timestamps)
+        assert all(len(a) == length for _, a in self.to_dict() if isinstance(a, np.ndarray))
+
+
     def find_nearest_index(self, timestamp: int) -> int:
         i = np.searchsorted(self.timestamps, timestamp, side='left')
         if i == len(self.timestamps):
@@ -107,30 +112,6 @@ class DepthDataset(CameraDataset):
         d = super().to_dict()
         d['nears'] = self.nears
         d['fars'] = self.fars
-
-        return d
-
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
-
-
-    @classmethod
-    def load(cls, path: Path):
-        data = dict(np.load(path, allow_pickle=False))
-        cls.parse_transforms(data)
-
-        return cls.from_dict(data=data)
-
-
-@dataclass
-class RGBDDataset(CameraDataset):
-    depth_relative_paths: np.ndarray
-
-    def to_dict(self) -> dict:
-        d = super().to_dict()
-        d['depth_relative_paths'] = self.depth_relative_paths
 
         return d
 
