@@ -24,20 +24,25 @@ class CameraDataset:
 
 
     def __post_init__(self):
-        length = len(self.timestamps)
-        assert all(len(a) == length for _, a in self.to_dict() if isinstance(a, np.ndarray))
+        length = self.timestamps.shape[0]
+
+        assert all(
+            a.shape[0] == length
+            for _, a in self.to_dict().items()
+            if isinstance(a, np.ndarray) and a.ndim > 0
+        )
 
 
     def find_nearest_index(self, timestamp: int) -> int:
         i = np.searchsorted(self.timestamps, timestamp, side='left')
         if i == len(self.timestamps):
-            return i - 1
+            return int(i - 1)
         elif i == 0:
             return 0
         elif abs(self.timestamps[i] - timestamp) < abs(self.timestamps[i - 1] - timestamp):
-            return i
+            return int(i)
         else:
-            return i - 1
+            return int(i - 1)
         
 
     def get_intrinsic_matrices(self) -> np.ndarray:

@@ -1,6 +1,7 @@
 from pathlib import Path
 from config.pipeline_configs import PipelineConfigs
 from dataio.data_io import DataIO
+from processing.depth_conversion.convert_depth_to_linear import convert_depth_directory
 from processing.yuv_conversion.convert_yuv_dir import convert_yuv_directory
 
 
@@ -12,3 +13,7 @@ class PipelineProcessor:
 
     def convert_yuv_to_rgb(self):
         convert_yuv_directory(image_io=self.data_io.image, config=self.pipeline_configs.yuv_to_rgb)
+
+    
+    def convert_depth_to_linear(self):
+        convert_depth_directory(depth_data_io=self.data_io.depth, depth_to_linear_config=self.pipeline_configs.depth_to_linear)

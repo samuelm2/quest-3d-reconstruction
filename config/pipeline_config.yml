@@ -5,3 +5,7 @@ yuv_to_rgb:
   exposure_threshold_low: 0.05  # Underexposure detection threshold
   exposure_threshold_high: 0.05 # Overexposure detection threshold
 
+depth_to_linear:
+  clip_near_m: 0.1 # Near clipping distance in meters for linear depth visualization
+  clip_far_m: 3.0  # Far clipping distance in meters for linear depth visualization
+  use_cache: True # Whether to use the depth dataset cache
