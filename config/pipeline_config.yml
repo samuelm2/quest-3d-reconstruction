@@ -1,0 +1,7 @@
+yuv_to_rgb:
+  blur_filter: False     # Enable image blur filtering
+  blur_threshold: 50.0   # Threshold for blur detection using Laplacian variance
+  exposure_filter: False       # Enable image exposure filtering
+  exposure_threshold_low: 0.05  # Underexposure detection threshold
+  exposure_threshold_high: 0.05 # Overexposure detection threshold
+
