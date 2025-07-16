@@ -155,8 +155,9 @@ def build_pose_graph_for_fragment(
     N = len(frag_dataset.timestamps)
     pose_graph = o3d.pipelines.registration.PoseGraph()
 
+    width = frag_dataset.widths[0]
     intrinsic_matrix = frag_dataset.get_intrinsic_matrices()[0]
-    intrinsic_matrix[0, 2] = intrinsic_matrix[0, 2]
+    intrinsic_matrix[0, 2] = width - intrinsic_matrix[0, 2]
     intrinsic_matrix[1, 2] = intrinsic_matrix[1, 2]
 
     intrinsic_tensor = o3d.core.Tensor(
@@ -328,7 +329,7 @@ def optimize_and_create_pointcloud(
         pcd = o3d.t.geometry.PointCloud.create_from_depth_image(
             depth=depth_map,
             intrinsics=intrinsic_tensor.to(o3d.core.Dtype.Float32), 
-            extrinsics=o3d.core.Tensor(optimized_poses[i], dtype=o3d.core.Dtype.Float32),
+            extrinsics=o3d.core.Tensor(np.linalg.inv(optimized_poses[i]), dtype=o3d.core.Dtype.Float32),
             depth_scale=1.0, 
             depth_max=depth_max, 
             stride=1)
@@ -367,7 +368,7 @@ def make_fragments(
             is_camera=True
         )
 
-        frag_datasets = split_dataset(dataset=depth_dataset, fragment_size=fragment_size)[:1]
+        frag_datasets = split_dataset(dataset=depth_dataset, fragment_size=fragment_size)
 
         fragment_dataset_map[side] = frag_datasets
 
