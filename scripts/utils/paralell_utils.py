@@ -28,14 +28,23 @@ def parallel_map(
     show_progress=False,
     desc=None,
 ):
+    worker = ParallelWorker(func, default_on_error)
+
     if not use_multiprocessing:
         results = []
-        for args in args_list:
+
+        args_iter = args_list
+        if show_progress:
+            from tqdm import tqdm
+            args_iter = tqdm(args_list, total=len(args_list), desc=desc)
+
+        for args in args_iter:
             try:
-                results.append(func(args))
+                results.append(worker(args))
             except Exception as e:
-                print(f"[Error] {func.__name__} failed with args {args}: {e}")
+                print(f"[Error] {func.__name__} failed: {e}")
                 results.append(default_on_error)
+
         return results
 
     os.environ["OMP_NUM_THREADS"] = "1"
@@ -44,8 +53,6 @@ def parallel_map(
         max_workers = max(1, min(multiprocessing.cpu_count() - 1, len(args_list)))
 
     ctx = multiprocessing.get_context(context)
-
-    worker = ParallelWorker(func, default_on_error)
 
     with ctx.Pool(processes=max_workers) as pool:
         if show_progress:

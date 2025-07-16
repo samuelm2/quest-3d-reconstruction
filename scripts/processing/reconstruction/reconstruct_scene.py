@@ -6,6 +6,7 @@ from dataio.depth_data_io import DepthDataIO
 from dataio.reconstruction_data_io import ReconstructionDataIO
 from processing.reconstruction.make_fragments import make_fragment_datasets
 from processing.reconstruction.o3d_utils import integrate
+from processing.reconstruction.refine_fragment_poses import refine_fragment_poses
 
 
 def log_step(title: str):
@@ -40,15 +41,16 @@ def reconstruct_scene(depth_data_io: DepthDataIO, recon_data_io: ReconstructionD
     config = ReconstructionConfig()
 
     frag_dataset_map = load_or_make_fragment_dataset(depth_data_io, recon_data_io, config)
+    refine_fragment_poses(depth_data_io, recon_data_io, frag_dataset_map, config.fragment_pose_refinement)
 
-    print("[Info] Visualizing the generated point cloud...")
-    fragments = []
-    for side, frag_datasets in frag_dataset_map.items():
-        for frag_dataset in frag_datasets:
-            vgb = integrate(frag_dataset, depth_data_io, side, 0.01, 16, 50_000, 1.5, 8.0, o3d.core.Device("CUDA:0"))
-            fragments.append(vgb.extract_point_cloud())
-
-    legacy_fragments = [f.to_legacy() for f in fragments]
-
-    axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
-    o3d.visualization.draw_geometries(legacy_fragments + [axis], window_name="Generated Point Cloud")
+    # print("[Info] Visualizing the generated point cloud...")
+    # fragments = []
+    # for side, frag_datasets in frag_dataset_map.items():
+    #     for frag_dataset in frag_datasets:
+    #         vgb = integrate(frag_dataset, depth_data_io, side, 0.01, 16, 50_000, 1.5, 8.0, o3d.core.Device("CUDA:0"))
+    #         fragments.append(vgb.extract_point_cloud())
+# 
+    # legacy_fragments = [f.to_legacy() for f in fragments]
+# 
+    # axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
+    # o3d.visualization.draw_geometries(legacy_fragments + [axis], window_name="Generated Point Cloud")

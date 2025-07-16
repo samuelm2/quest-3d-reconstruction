@@ -1,6 +1,6 @@
 import open3d as o3d
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -19,12 +19,40 @@ class FragmentGenerationConfig:
     device: o3d.core.Device = o3d.core.Device("CUDA:0")
 
     use_dataset_cache: bool = True
-    use_multi_threading: bool = True
+    use_multi_threading: bool = False
 
 
 @dataclass
 class FragmentPoseRefinementConfig:
-    pass
+    voxel_size: float = 0.01
+    block_resolution: int = 16
+    block_count: int = 50_000
+    depth_max: float = 1.5
+    trunc_voxel_multiplier: float = 8.0
+
+    icp_voxel_sizes: list[float] = field(default_factory=lambda: [0.05, 0.025, 0.0125])
+    max_corr_dists: list[float] = field(default_factory=lambda: [0.1, 0.05, 0.025])
+    max_iterations: list[int] = field(default_factory=lambda: [50, 31, 14])
+    relative_fitnesses: list[float] = field(default_factory=lambda: [1e-6, 1e-6, 1e-6])
+    relative_rmses: list[float] = field(default_factory=lambda: [1e-6, 1e-6, 1e-6])
+
+    icp_fitness_threshold: float = 0.3
+    icp_inlier_rmse_threshold: float = 0.05
+
+    device: o3d.core.Device = o3d.core.Device("CUDA:0")
+
+    use_multi_threading: bool = False
+
+    @property
+    def icp_criteria_list(self):
+        return [
+            o3d.t.pipelines.registration.ICPConvergenceCriteria(
+                max_iteration=self.max_iterations[i],
+                relative_fitness=self.relative_fitnesses[i],
+                relative_rmse=self.relative_rmses[i]
+            )
+            for i in range(len(self.icp_voxel_sizes))
+        ]
 
 
 @dataclass

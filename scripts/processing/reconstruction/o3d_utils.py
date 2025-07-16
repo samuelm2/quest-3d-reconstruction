@@ -82,6 +82,8 @@ def integrate(
     depth_max: float,
     trunc_voxel_multiplier: float,
     device: o3d.core.Device,
+    show_progress=False,
+    desc=None,
 ) -> o3d.t.geometry.VoxelBlockGrid:
     vbg = o3d.t.geometry.VoxelBlockGrid(
         attr_names=('tsdf', 'weight'),
@@ -98,24 +100,24 @@ def integrate(
     extrinsic_wc = dataset.transforms.extrinsics_wc
     intrinsic_matrices = compute_o3d_intrinsic_matrices(dataset=dataset)
 
-    for i in tqdm(range(N), desc="[Info] Integrating depth dataset..."):
+    def integrate(index: int):
         depth_map = load_depth_map(
             depth_data_io=depth_data_io,
             side=side,
-            index=i,
+            index=index,
             dataset=dataset,
             device=device
         )
 
         if depth_map is None:
-            continue
+            return
 
         intrinsic = o3d.core.Tensor(
-            intrinsic_matrices[i],
+            intrinsic_matrices[index],
             dtype=o3d.core.Dtype.Float64
         )
         extrinsic = o3d.core.Tensor(
-            extrinsic_wc[i],
+            extrinsic_wc[index],
             dtype=o3d.core.Dtype.Float64
         )
 
@@ -137,5 +139,12 @@ def integrate(
             depth_max=float(depth_max),
             trunc_voxel_multiplier=float(trunc_voxel_multiplier),
         )
+
+    if show_progress:
+        for index in tqdm(range(N), desc=desc):
+            integrate(index)
+    else:
+        for index in range(N):
+            integrate(index)
 
     return vbg
