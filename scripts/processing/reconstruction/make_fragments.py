@@ -293,7 +293,7 @@ def make_fragment_datasets(
         fragments = []
         fragment_dataset_map[side] = fragments
 
-        depth_dataset = depth_data_io.load_depth_dataset(side=side, use_cache=config.use_cache)
+        depth_dataset = depth_data_io.load_depth_dataset(side=side, use_cache=config.use_dataset_cache)
         depth_dataset.transforms = depth_dataset.transforms.convert_coordinate_system(
             target_coordinate_system=CoordinateSystem.OPEN3D,
             is_camera=True
@@ -314,7 +314,7 @@ def make_fragment_datasets(
             context="spawn",
             default_on_error=None,
             show_progress=True,
-            desc="[Info] Optimizing Depth Camera Pose..."
+            desc=f"[{side.name}] Optimizing Depth Camera Pose for fragments..."
         )
 
     return fragment_dataset_map

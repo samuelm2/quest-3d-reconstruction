@@ -43,6 +43,12 @@ DEPTH_DATASET_NPZ_MAP = {
     Side.RIGHT: 'dataset/right_depth_dataset.npz',
 }
 
+CACHE_DIR_PATH = 'cache'
+
+FRAGMENT_DATASET_CACHE_DIR_PATH = f'{CACHE_DIR_PATH}/dataset'
+FRAGMENT_PCD_CACHE_DIR_PATH = f'{CACHE_DIR_PATH}/pcd'
+
+
 class ImagePathConfig:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
@@ -111,10 +117,42 @@ class DepthPathConfig:
 
     def get_relative_path(self, path: Path) -> Path:
         return path.relative_to(self.project_dir)
+
+
+class ReconstructionPathConfig:
+    def __init__(self, project_dir: Path):
+        self.project_dir = project_dir
+
     
+    def get_fragment_dir(self) -> Path:
+        return self.project_dir / FRAGMENT_DATASET_CACHE_DIR_PATH
+    
+    
+    def get_fragment_dataset_paths(self) -> dict[Side, list[Path]]:
+        dir_path = self.get_fragment_dir()
+        if not dir_path.exists() or not dir_path.is_dir():
+            return {}
+
+        fragment_dataset_paths = {}
+
+        for side in Side:
+            side_datasets = sorted(dir_path.glob(f'{side.name}_fragment_*_dataset.npz'))
+            fragment_dataset_paths[side] = side_datasets
+
+        return fragment_dataset_paths
+        
+
+    def get_fragment_dataset_path(self, side: Side, index: int) -> Path:
+        return self.get_fragment_dir() / f'{side.name}_fragment_{index}_dataset.npz'
+
+
+    def get_fragment_pcd_path(self, side: Side, index: int) -> Path:
+        return self.project_dir / FRAGMENT_PCD_CACHE_DIR_PATH / f'{side.name}_fragment_{index}.pcd'
+
 
 class ProjectPathConfig:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
         self.image = ImagePathConfig(project_dir=project_dir)
         self.depth = DepthPathConfig(project_dir=project_dir)
+        self.reconstruction = ReconstructionPathConfig(project_dir=project_dir)

@@ -21,4 +21,4 @@ class PipelineProcessor:
 
 
     def reconstruct_scene(self):
-        reconstruct_scene(depth_data_io=self.data_io.depth)
+        reconstruct_scene(depth_data_io=self.data_io.depth, recon_data_io=self.data_io.reconstruction)

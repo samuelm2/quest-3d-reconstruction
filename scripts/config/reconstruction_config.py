@@ -18,10 +18,18 @@ class FragmentGenerationConfig:
 
     device: o3d.core.Device = o3d.core.Device("CUDA:0")
 
-    use_cache: bool = True
+    use_dataset_cache: bool = True
     use_multi_threading: bool = True
 
 
 @dataclass
+class FragmentPoseRefinementConfig:
+    pass
+
+
+@dataclass
 class ReconstructionConfig:
-    config: FragmentGenerationConfig
+    fragment_generation: FragmentGenerationConfig = FragmentGenerationConfig()
+    fragment_pose_refinement: FragmentPoseRefinementConfig = FragmentPoseRefinementConfig()
+
+    use_fragment_dataset_cache: bool = True

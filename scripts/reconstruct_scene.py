@@ -32,7 +32,7 @@ def main(args):
         config_yml_path=args.config
     )
 
-    print("[Info] Reconstruct scene...")
+    print("[Info] Reconstructing scene...")
     processor.reconstruct_scene()
     print("[Info] Reconstruction completed.")
 
