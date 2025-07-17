@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, cast
 import numpy as np
 import open3d as o3d
 from scipy.spatial.transform import Rotation as R
@@ -82,18 +82,22 @@ def integrate(
     depth_max: float,
     trunc_voxel_multiplier: float,
     device: o3d.core.Device,
-    show_progress=False,
-    desc=None,
+    show_progress: bool = False,
+    desc: Optional[str] = None,
+    vbg_opt: Optional[o3d.t.geometry.VoxelBlockGrid] = None,
 ) -> o3d.t.geometry.VoxelBlockGrid:
-    vbg = o3d.t.geometry.VoxelBlockGrid(
-        attr_names=('tsdf', 'weight'),
-        attr_dtypes=(o3d.core.float32, o3d.core.float32),
-        attr_channels=((1), (1)),
-        voxel_size=voxel_size,
-        block_resolution=block_resolution,
-        block_count=block_count,
-        device=device,
-    )
+    if vbg_opt is None:
+        vbg = o3d.t.geometry.VoxelBlockGrid(
+            attr_names=('tsdf', 'weight'),
+            attr_dtypes=(o3d.core.float32, o3d.core.float32),
+            attr_channels=((1), (1)),
+            voxel_size=voxel_size,
+            block_resolution=block_resolution,
+            block_count=block_count,
+            device=device,
+        )
+    else:
+        vbg = vbg_opt
 
     N = len(dataset.timestamps)
 

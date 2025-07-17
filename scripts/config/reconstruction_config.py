@@ -36,8 +36,11 @@ class FragmentPoseRefinementConfig:
     relative_fitnesses: list[float] = field(default_factory=lambda: [1e-6, 1e-6, 1e-6])
     relative_rmses: list[float] = field(default_factory=lambda: [1e-6, 1e-6, 1e-6])
 
-    icp_fitness_threshold: float = 0.3
+    icp_fitness_threshold: float = 0.2
     icp_inlier_rmse_threshold: float = 0.05
+
+    dist_threshold: float = 0.07
+    edge_prune_threshold: float = 0.25
 
     device: o3d.core.Device = o3d.core.Device("CUDA:0")
 
@@ -60,4 +63,6 @@ class ReconstructionConfig:
     fragment_generation: FragmentGenerationConfig = FragmentGenerationConfig()
     fragment_pose_refinement: FragmentPoseRefinementConfig = FragmentPoseRefinementConfig()
 
-    use_fragment_dataset_cache: bool = True
+    optimize_depth_pose: bool = False
+    use_fragment_dataset_cache: bool = False
+    use_optimized_dataset_cache: bool = False

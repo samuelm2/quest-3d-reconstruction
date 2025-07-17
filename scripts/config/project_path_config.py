@@ -43,6 +43,11 @@ DEPTH_DATASET_NPZ_MAP = {
     Side.RIGHT: 'dataset/right_depth_dataset.npz',
 }
 
+OPTIMIZED_DEPTH_DATASET_NPZ_MAP = {
+    Side.LEFT: 'dataset/left_depth_dataset_optimized.npz',
+    Side.RIGHT: 'dataset/right_depth_dataset_optimized.npz',
+}
+
 CACHE_DIR_PATH = 'cache'
 
 FRAGMENT_DATASET_CACHE_DIR_PATH = f'{CACHE_DIR_PATH}/dataset'
@@ -109,6 +114,10 @@ class DepthPathConfig:
 
     def get_depth_dataset_path(self, side: Side) -> Path:
         return self.project_dir / DEPTH_DATASET_NPZ_MAP[side]
+    
+
+    def get_optimized_depth_dataset_path(self, side: Side) -> Path:
+        return self.project_dir / OPTIMIZED_DEPTH_DATASET_NPZ_MAP[side]
     
 
     def get_linear_depth_dir(self, side: Side) -> Path:

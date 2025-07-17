@@ -7,7 +7,7 @@ from dataio.depth_data_io import DepthDataIO
 from dataio.reconstruction_data_io import ReconstructionDataIO
 from models.camera_dataset import DepthDataset
 from models.side import Side
-from processing.reconstruction.o3d_utils import integrate
+from processing.reconstruction.utils.o3d_utils import convert_pose_graph_to_transforms, integrate
 from utils.paralell_utils import parallel_map
 
 
@@ -28,7 +28,8 @@ def integrate_fragment_point_cloud(
         trunc_voxel_multiplier=config.trunc_voxel_multiplier,
         device=config.device,
         show_progress=False,
-        desc=None
+        desc=None,
+        vbg_opt=None,
     )
 
     return side, vbg.extract_point_cloud()
@@ -100,10 +101,17 @@ def compute_pcd_pair_edge(
         estimation_method=o3d.t.pipelines.registration.TransformationEstimationPointToPoint(),
     )
 
-    if not icp_result.converged \
-        or icp_result.fitness < config.icp_fitness_threshold \
+    # TODO: Workaround for Open3D ICP 'converged' flag bug.
+    # See: https://github.com/isl-org/Open3D/issues/7296
+    # The 'converged' flag in t::pipelines::registration::ICP is currently always false
+    # due to a bug in the multi-scale ICP pipeline (as of commit f4727a5).
+    # Until this is fixed in a stable Open3D release, we ignore the 'converged' flag
+    # and rely on fitness and inlier_rmse thresholds instead.
+    # Once the fix is officially released, re-enable convergence checking here.
+    # if not icp_result.converged \
+    if icp_result.fitness < config.icp_fitness_threshold \
         or icp_result.inlier_rmse > config.icp_inlier_rmse_threshold:
-        raise Exception(f"[Error] Converged: {icp_result.converged}, Fitness: {icp_result.fitness}, Inlier RMSE: {icp_result.inlier_rmse}")
+        return
     
     info = o3d.t.pipelines.registration.get_information_matrix(
         source=source_pcd,
@@ -115,7 +123,7 @@ def compute_pcd_pair_edge(
     edge = o3d.pipelines.registration.PoseGraphEdge(
         source_node_id=source_node_index,
         target_node_id=target_node_index,
-        transformation=icp_result.transformation,
+        transformation=icp_result.transformation.cpu().numpy(),
         information=info.cpu().numpy(),
         uncertain=uncertain,
         confidence=1.0
@@ -128,7 +136,10 @@ def build_pose_graph_for_scene(
     recon_data_io: ReconstructionDataIO,
     fragment_counts: dict[Side, int],
     config: FragmentPoseRefinementConfig
-) -> o3d.pipelines.registration.PoseGraph:
+) -> tuple[
+    o3d.pipelines.registration.PoseGraph,
+    list[tuple[Side, int]]
+]:
     pose_graph = o3d.pipelines.registration.PoseGraph()
 
     # register nodes
@@ -196,7 +207,7 @@ def build_pose_graph_for_scene(
 
     pose_graph.edges.extend(valid_edges)
 
-    return pose_graph
+    return pose_graph, node_side_index_list
 
 
 def refine_fragment_poses(
@@ -212,12 +223,39 @@ def refine_fragment_poses(
         config=config
     )
 
+    # Register fragments using pairwise ICP
     fragment_counts = {}
     for side, fragment_datasets in fragment_dataset_map.items():
         fragment_counts[side] = len(fragment_datasets)
     
-    pose_graph = build_pose_graph_for_scene(
+    pose_graph, node_side_index_list = build_pose_graph_for_scene(
         recon_data_io=recon_data_io,
         fragment_counts=fragment_counts,
         config=config
     )
+
+    # Optimize the global pose graph
+    option = o3d.pipelines.registration.GlobalOptimizationOption(
+        max_correspondence_distance=config.dist_threshold, 
+        edge_prune_threshold=config.edge_prune_threshold, 
+        reference_node=0
+    )
+    o3d.pipelines.registration.global_optimization(
+        pose_graph, 
+        o3d.pipelines.registration.GlobalOptimizationLevenbergMarquardt(),
+        o3d.pipelines.registration.GlobalOptimizationConvergenceCriteria(), 
+        option
+    ) 
+
+    # Apply optimized poses to the dataset
+    fragment_transforms = convert_pose_graph_to_transforms(pose_graph=pose_graph)
+    
+    for node_index, (side, side_index) in enumerate(node_side_index_list):
+        position = fragment_transforms.positions[node_index]
+        rotation = fragment_transforms.rotations[node_index]
+
+        fragment_database = fragment_dataset_map[side][side_index]
+
+        fragment_database.transforms = fragment_database.transforms.apply_world_transform(
+            delta_position=position, delta_rotation=rotation
+        )

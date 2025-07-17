@@ -1,8 +1,12 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeVar, Type
 import numpy as np
 
 from models.transforms import Transforms, CoordinateSystem
+
+
+T = TypeVar("T", bound="CameraDataset")
 
 
 @dataclass
@@ -110,6 +114,35 @@ class CameraDataset:
 
         return cls.from_dict(data=data)
     
+
+    @classmethod
+    def merge(cls: Type[T], datasets: list[T]) -> T:
+        dicts = [ds.to_dict() for ds in datasets]
+
+        merged = {}
+        keys = dicts[0].keys()
+
+        for key in keys:
+            values = [d[key] for d in dicts]
+            types = {type(v) for v in values}
+
+            assert len(types) == 1, f"Inconsistent types for key '{key}': {types}"
+
+            v0 = values[0]
+            if isinstance(v0, np.ndarray) and v0.ndim >= 1:
+                shapes = {v.shape[1:] for v in values}
+                assert len(shapes) == 1, f"Inconsistent shapes for key '{key}' (excluding first axis): {shapes}"
+
+                merged[key] = np.concatenate(values, axis=0)
+
+            else:
+                all_equal = all(v == v0 for v in values)
+                assert all_equal, f"Inconsistent scalar values for key '{key}': {set(values)}"
+
+                merged[key] = v0
+
+        return cls.from_dict(merged)
+        
 
 @dataclass
 class DepthDataset(CameraDataset):

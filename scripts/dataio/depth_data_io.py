@@ -88,6 +88,24 @@ class DepthDataIO:
         depth_dataset.save(depth_dataset_path)
 
         return depth_dataset
+    
+
+    def load_optimized_depth_dataset(self, side: Side) -> Optional[DepthDataset]:
+        optimized_depth_dataset_path = self.depth_path_config.get_optimized_depth_dataset_path(side=side)
+
+        if optimized_depth_dataset_path.exists():
+            try:
+                return DepthDataset.load(optimized_depth_dataset_path)
+            except Exception as e:
+                print(f"[Error] Depth dataset cache is corrupted or invalid.\n{e}")
+
+        print(f"[Info] Depth dataset not found.")
+
+
+    def save_optimized_depth_dataset(self, side: Side, dataset: DepthDataset):
+        optimized_depth_dataset_path = self.depth_path_config.get_optimized_depth_dataset_path(side=side)
+
+        dataset.save(optimized_depth_dataset_path)
 
     
     def build_depth_dataset(self, side: Side) -> DepthDataset:

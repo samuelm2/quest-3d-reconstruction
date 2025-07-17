@@ -7,7 +7,7 @@ from dataio.depth_data_io import DepthDataIO
 from models.camera_dataset import DepthDataset
 from models.side import Side
 from models.transforms import CoordinateSystem
-from processing.reconstruction.o3d_utils import compute_o3d_intrinsic_matrices, convert_pose_graph_to_transforms, convert_transforms_to_pose_graph, load_depth_map
+from processing.reconstruction.utils.o3d_utils import compute_o3d_intrinsic_matrices, convert_pose_graph_to_transforms, convert_transforms_to_pose_graph, load_depth_map
 from utils.paralell_utils import parallel_map
 
 
