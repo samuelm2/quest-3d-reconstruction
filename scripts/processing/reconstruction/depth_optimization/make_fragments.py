@@ -81,38 +81,6 @@ def frustum_overlap_filter(
     return overlap_ratio > overlap_ratio_threshold
 
 
-def iter_dict_array_fragments(arrays: dict[object, np.ndarray], fragment_size: int) -> Generator[dict[object, np.ndarray], None, None]:
-    keys = list(arrays.keys())
-    length = len(arrays[keys[0]])
-
-    for i in range(0, length, fragment_size):
-        yield {
-            k: arrays[k][i:i + fragment_size] for k in keys
-        }
-
-
-def iter_dict_fragments(d: dict, fragment_size: int) -> Generator[dict, None, None]:
-    array_dict = {}
-    other_dict = {}
-
-    for k, v in d.items():
-        (array_dict if isinstance(v, np.ndarray) and v.ndim > 0 else other_dict)[k] = v
-    
-    for fragment_dict in iter_dict_array_fragments(arrays=array_dict, fragment_size=fragment_size):
-        fragment_dict.update(other_dict)
-        yield fragment_dict
-
-
-def split_dataset(
-    dataset: DepthDataset,
-    fragment_size: int,
-) -> list[DepthDataset]:
-    return [
-        DepthDataset.from_dict(d)
-        for d in iter_dict_fragments(d=dataset.to_dict(), fragment_size=fragment_size)
-    ]
-
-
 def build_pose_graph_for_fragment(
     frag_dataset: DepthDataset,
     depth_data_io: DepthDataIO,
@@ -299,7 +267,7 @@ def make_fragment_datasets(
             is_camera=True
         )
 
-        frag_datasets = split_dataset(dataset=depth_dataset, fragment_size=config.fragment_size)
+        frag_datasets = depth_dataset.split(fragment_size=config.fragment_size)
         fragment_dataset_map[side] = frag_datasets
 
         args_list = [

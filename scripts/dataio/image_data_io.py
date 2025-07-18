@@ -4,7 +4,7 @@ import cv2
 import pandas as pd
 from scipy.spatial.transform import Rotation as R
 from config.project_path_config import ImagePathConfig
-from dataio.pose_interpolator import PoseInterpolator
+from dataio.helpers.pose_interpolator import PoseInterpolator
 from models.camera_characteristics import CameraCharacteristics
 from models.camera_dataset import CameraDataset
 from models.image_format_info import BaseTime, ImageFormatInfo, ImagePlaneInfo

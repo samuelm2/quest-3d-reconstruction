@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeVar, Type
+from typing import Iterator, TypeVar, Type, Union, overload
 import numpy as np
 
 from models.transforms import Transforms, CoordinateSystem
@@ -36,6 +36,47 @@ class CameraDataset:
             if isinstance(a, np.ndarray) and a.ndim > 0
         )
 
+
+    @overload
+    def __getitem__(self: T, idx: int) -> dict[str, np.ndarray]: ... # type: ignore
+
+    @overload
+    def __getitem__(self: T, idx: Union[slice, list, np.ndarray]) -> T: ...
+
+    def __getitem__(self: T, idx): # type: ignore
+        data = self.to_dict()
+
+        arrays = {k: v for k, v in data.items() if isinstance(v, np.ndarray) and v.ndim > 0}
+        others = {k: v for k, v in data.items() if k not in arrays}
+
+        if isinstance(idx, int):
+            return {k: v[idx] for k, v in arrays.items()} | others
+
+        elif isinstance(idx, slice) or isinstance(idx, (list, np.ndarray)):
+            subset = {
+                k: v[idx] if isinstance(v, np.ndarray) and v.ndim > 0 else v
+                for k, v in data.items()
+            }
+            return self.__class__.from_dict(subset)
+
+        else:
+            raise TypeError(f"Unsupported index type: {type(idx)}")
+
+
+    def __iter__(self) -> Iterator[dict[str, np.ndarray]]:
+        for i in range(len(self)):
+            yield self[i]
+
+
+    def __len__(self) -> int:
+        data = self.to_dict()
+
+        for v in data.values():
+            if isinstance(v, np.ndarray) and v.ndim > 0:
+                return len(v)
+
+        raise RuntimeError("No array data in dataset")
+    
 
     def find_nearest_index(self, timestamp: int) -> int:
         i = np.searchsorted(self.timestamps, timestamp, side='left')
@@ -89,6 +130,13 @@ class CameraDataset:
             path,
             **self.to_dict()
         )
+
+
+    def split(self: T, fragment_size: int) -> list[T]:
+        return [
+            self[i:i + fragment_size]
+            for i in range(0, len(self), fragment_size)
+        ]
 
     
     @staticmethod
