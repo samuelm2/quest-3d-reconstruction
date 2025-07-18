@@ -30,6 +30,11 @@ class FragmentPoseRefinementConfig:
     depth_max: float = 1.5
     trunc_voxel_multiplier: float = 8.0
 
+    use_pre_filtering: bool = True
+    pre_filter_every_k_points: float = 30
+    pre_filter_max_corr_dist: float = 0.1
+    pre_filter_fitness_threshold: float = 0.2
+
     icp_voxel_sizes: list[float] = field(default_factory=lambda: [0.05, 0.025, 0.0125])
     max_corr_dists: list[float] = field(default_factory=lambda: [0.1, 0.05, 0.025])
     max_iterations: list[int] = field(default_factory=lambda: [50, 31, 14])
@@ -63,6 +68,6 @@ class ReconstructionConfig:
     fragment_generation: FragmentGenerationConfig = FragmentGenerationConfig()
     fragment_pose_refinement: FragmentPoseRefinementConfig = FragmentPoseRefinementConfig()
 
-    optimize_depth_pose: bool = False
-    use_fragment_dataset_cache: bool = False
-    use_optimized_dataset_cache: bool = False
+    optimize_depth_pose: bool = True
+    use_fragment_dataset_cache: bool = True
+    use_optimized_dataset_cache: bool = True

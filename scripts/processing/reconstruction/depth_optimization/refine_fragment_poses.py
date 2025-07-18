@@ -91,6 +91,18 @@ def compute_pcd_pair_edge(
     source_pcd = recon_data_io.load_fragment_pcd(side=source_side, index=source_index)
     target_pcd = recon_data_io.load_fragment_pcd(side=target_side, index=target_index)
 
+    if config.use_pre_filtering and uncertain:
+        source_pcd_pre_filter = source_pcd.uniform_down_sample(config.pre_filter_every_k_points)
+        target_pcd_pre_filter = target_pcd.uniform_down_sample(config.pre_filter_every_k_points)
+        pre_filter_result = o3d.t.pipelines.registration.evaluate_registration(
+            source=source_pcd_pre_filter,
+            target=target_pcd_pre_filter,
+            max_correspondence_distance=config.pre_filter_max_corr_dist,
+            transformation=np.eye(4),
+        )
+        if pre_filter_result.fitness < config.pre_filter_fitness_threshold:
+            return None
+
     icp_result = o3d.t.pipelines.registration.multi_scale_icp(
         source=source_pcd,
         target=target_pcd,
@@ -108,9 +120,11 @@ def compute_pcd_pair_edge(
     # Until this is fixed in a stable Open3D release, we ignore the 'converged' flag
     # and rely on fitness and inlier_rmse thresholds instead.
     # Once the fix is officially released, re-enable convergence checking here.
-    # if not icp_result.converged \
-    if icp_result.fitness < config.icp_fitness_threshold \
-        or icp_result.inlier_rmse > config.icp_inlier_rmse_threshold:
+    # icp_result.converged
+    converged = icp_result.fitness >= config.icp_fitness_threshold \
+        or icp_result.inlier_rmse <= config.icp_inlier_rmse_threshold
+
+    if uncertain and not converged:
         return
     
     info = o3d.t.pipelines.registration.get_information_matrix(
