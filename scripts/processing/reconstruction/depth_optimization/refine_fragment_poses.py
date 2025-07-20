@@ -94,13 +94,18 @@ def compute_pcd_pair_edge(
     if config.use_pre_filtering and uncertain:
         source_pcd_pre_filter = source_pcd.uniform_down_sample(config.pre_filter_every_k_points)
         target_pcd_pre_filter = target_pcd.uniform_down_sample(config.pre_filter_every_k_points)
+
+        o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
         pre_filter_result = o3d.t.pipelines.registration.evaluate_registration(
             source=source_pcd_pre_filter,
             target=target_pcd_pre_filter,
             max_correspondence_distance=config.pre_filter_max_corr_dist,
             transformation=np.eye(4),
         )
-        if pre_filter_result.fitness < config.pre_filter_fitness_threshold:
+        o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Warning)
+
+        if pre_filter_result.fitness < config.pre_filter_fitness_threshold \
+            or pre_filter_result.inlier_rmse > config.pre_filter_inlier_rmse_threshold:
             return None
 
     icp_result = o3d.t.pipelines.registration.multi_scale_icp(

@@ -33,6 +33,7 @@ class FragmentPoseRefinementConfig:
     use_pre_filtering: bool = True
     pre_filter_every_k_points: float = 30
     pre_filter_max_corr_dist: float = 0.1
+    pre_filter_inlier_rmse_threshold: float = 0.05
     pre_filter_fitness_threshold: float = 0.2
 
     icp_voxel_sizes: list[float] = field(default_factory=lambda: [0.05, 0.025, 0.0125])
