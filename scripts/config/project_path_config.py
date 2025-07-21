@@ -41,8 +41,8 @@ DEPTH_DESCRIPTOR_CSV_MAP = {
 }
 
 DEPTH_CONFIDENCE_MAP_DIR_MAP = {
-    Side.LEFT: 'dataset/left_depth_confidence',
-    Side.RIGHT: 'dataset/right_depth_confidence',
+    Side.LEFT: 'left_depth_confidence',
+    Side.RIGHT: 'right_depth_confidence',
 }
 
 LINEAR_DEPTH_DIR_MAP = {
