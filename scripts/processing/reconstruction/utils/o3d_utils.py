@@ -50,6 +50,8 @@ def load_depth_map(
     index: int,
     dataset: DepthDataset,
     device: o3d.core.Device,
+    use_confidence_filtered_depth: bool,
+    confidence_threshold: float,
 ) -> Optional[o3d.t.geometry.Image]:
     depth_np = depth_data_io.load_depth_map(
         side=side,
@@ -62,6 +64,18 @@ def load_depth_map(
 
     if depth_np is None:
         return None
+
+    if use_confidence_filtered_depth:
+        confidence_map = depth_data_io.load_confidence_map(
+            side=side,
+            timestamp=dataset.timestamps[index]
+        )
+
+        if confidence_map is None:
+            print(f"[Warning] Confidence map not found for timestamp {dataset.timestamps[index]}")
+        else:
+            depth_np[confidence_map.confidence_map < confidence_threshold] = 0.0
+            depth_np[~confidence_map.valid_mask] = 0.0
 
     return o3d.t.geometry.Image(
         tensor=o3d.core.Tensor(
@@ -76,6 +90,8 @@ def integrate(
     dataset: DepthDataset,
     depth_data_io: DepthDataIO,
     side: Side,
+    use_confidence_filtered_depth: bool,
+    confidence_threshold: float,
     voxel_size: float,
     block_resolution: int,
     block_count: int,
@@ -110,7 +126,9 @@ def integrate(
             side=side,
             index=index,
             dataset=dataset,
-            device=device
+            device=device,
+            use_confidence_filtered_depth=use_confidence_filtered_depth,
+            confidence_threshold=confidence_threshold
         )
 
         if depth_map is None:

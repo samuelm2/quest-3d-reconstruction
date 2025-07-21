@@ -76,10 +76,10 @@ class DepthPoseOptimizer:
                 print("[Info] Optimized depth datasets loaded.")
                 return optimized_dataset
 
-        log_step("Refine Fragment poses")
-
         frag_dataset_map = self.load_or_make_fragment_datasets()
         
+        log_step("Refine Fragment poses")
+
         refine_fragment_poses(
             depth_data_io=self.depth_data_io,
             recon_data_io=self.recon_data_io,

@@ -108,7 +108,9 @@ def build_pose_graph_for_fragment(
         side=side,
         index=0,
         dataset=frag_dataset,
-        device=config.device
+        device=config.device,
+        use_confidence_filtered_depth=config.use_confidence_filtered_depth,
+        confidence_threshold=config.confidence_threshold
     )
     extrinsic_curr_cw = extrinsics_cw[0]
 
@@ -118,7 +120,9 @@ def build_pose_graph_for_fragment(
             side=side,
             index=i + 1,
             dataset=frag_dataset,
-            device=config.device
+            device=config.device,
+            use_confidence_filtered_depth=config.use_confidence_filtered_depth,
+            confidence_threshold=config.confidence_threshold
         )
         extrinsic_next_wc = extrinsics_wc[i + 1]
 
@@ -166,7 +170,13 @@ def build_pose_graph_for_fragment(
         height = frag_dataset.heights[i]
 
         depth_curr = load_depth_map(
-            depth_data_io=depth_data_io, side=side, index=key_i, dataset=frag_dataset, device=config.device
+            depth_data_io=depth_data_io, 
+            side=side, 
+            index=key_i, 
+            dataset=frag_dataset, 
+            device=config.device,
+            use_confidence_filtered_depth=config.use_confidence_filtered_depth,
+            confidence_threshold=config.confidence_threshold
         )
         extrinsic_curr_cw = extrinsics_cw[key_i]
 
@@ -176,7 +186,13 @@ def build_pose_graph_for_fragment(
         for j in range(i + 1, N_key_frames):
             key_j = key_indices[j]
             depth_next = load_depth_map(
-                depth_data_io=depth_data_io, side=side, index=key_j, dataset=frag_dataset, device=config.device
+                depth_data_io=depth_data_io, 
+                side=side, 
+                index=key_j, 
+                dataset=frag_dataset, 
+                device=config.device,
+                use_confidence_filtered_depth=config.use_confidence_filtered_depth,
+                confidence_threshold=config.confidence_threshold
             )
             extrinsic_next_cw = extrinsics_cw[key_j]
             extrinsic_next_wc = extrinsics_wc[key_j]

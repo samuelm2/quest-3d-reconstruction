@@ -5,6 +5,7 @@ import pandas as pd
 
 from config.project_path_config import DepthPathConfig
 from models.camera_dataset import DepthDataset
+from models.confidence_map import ConfidenceMap
 from models.side import Side
 from models.transforms import CoordinateSystem, Transforms
 from utils.depth_utils import compute_depth_camera_params, convert_depth_to_linear
@@ -83,6 +84,28 @@ class DepthDataIO:
 
         return bool(is_valid)
     
+
+    def load_confidence_map(self, side: Side, timestamp: int) -> Optional[ConfidenceMap]:
+        confidence_map_path = self.depth_path_config.get_depth_confidence_map_path(side=side, timestamp=timestamp)
+
+        if confidence_map_path.exists():           
+            data = np.load(confidence_map_path)
+            return ConfidenceMap(
+                confidence_map=data['confidence_map'],
+                valid_mask=data['valid_mask']
+            )
+        
+
+    def save_confidence_map(self, side: Side, timestamp: int, confidence_map: ConfidenceMap) -> None:
+        confidence_map_path = self.depth_path_config.get_depth_confidence_map_path(side=side, timestamp=timestamp)
+        confidence_map_path.parent.mkdir(parents=True, exist_ok=True)
+
+        np.savez(
+            confidence_map_path,
+            confidence_map=confidence_map.confidence_map,
+            valid_mask=confidence_map.valid_mask
+        )
+
 
     def load_depth_dataset(self, side: Side, use_cache: bool = True) -> DepthDataset:
         if side in self.depth_datasets:

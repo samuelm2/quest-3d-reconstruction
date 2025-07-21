@@ -5,13 +5,22 @@ from dataio.data_io import DataIO
 from models.camera_dataset import DepthDataset
 from models.side import Side
 from models.transforms import CoordinateSystem
+from processing.reconstruction.confidence_estimation.estimate_depth_confidences import estimate_depth_confidences
 from processing.reconstruction.depth_optimization.depth_pose_optimizer import DepthPoseOptimizer
+from processing.reconstruction.utils.log_utils import log_step
 from processing.reconstruction.utils.o3d_utils import integrate
 
 
 def reconstruct_scene(data_io: DataIO):
     # TODO: Inject as an argument
     config = ReconstructionConfig()
+
+    if config.estimate_depth_confidences:
+        log_step("Estimate depth confidences")
+        estimate_depth_confidences(
+            depth_data_io=data_io.depth,
+            config=config.confidence_estimation
+        )
 
     if config.optimize_depth_pose:
         optimizer = DepthPoseOptimizer(
@@ -40,7 +49,9 @@ def reconstruct_scene(data_io: DataIO):
             dataset, 
             data_io.depth, 
             side, 
-            0.01, 16, 50_000, 1.5, 8.0, o3d.core.Device("CUDA:0")
+            True, 0.05,
+            0.01, 16, 50_000, 1.5, 8.0, 
+            o3d.core.Device("CUDA:0")
         )
         pcds.append(vgb.extract_point_cloud())
 

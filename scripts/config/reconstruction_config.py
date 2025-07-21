@@ -4,9 +4,22 @@ from dataclasses import dataclass, field
 
 
 @dataclass
+class DepthConfidenceEstimationConfig:
+    target_frame_range: int = 10
+    depth_max: float = 3.0
+    error_threshold: float = 0.05
+
+    use_dataset_cache: bool = True
+    use_multi_threading: bool = True
+
+
+
+@dataclass
 class FragmentGenerationConfig:
     fragment_size: int = 100
 
+    use_confidence_filtered_depth: bool = True
+    confidence_threshold: float = 0.05
     depth_max: float = 3.0
 
     odometry_loop_interval: int = 10
@@ -24,6 +37,9 @@ class FragmentGenerationConfig:
 
 @dataclass
 class FragmentPoseRefinementConfig:
+    use_confidence_filtered_depth: bool = True
+    confidence_threshold: float = 0.05
+
     voxel_size: float = 0.01
     block_resolution: int = 16
     block_count: int = 50_000
@@ -66,8 +82,11 @@ class FragmentPoseRefinementConfig:
 
 @dataclass
 class ReconstructionConfig:
+    confidence_estimation: DepthConfidenceEstimationConfig = DepthConfidenceEstimationConfig()
     fragment_generation: FragmentGenerationConfig = FragmentGenerationConfig()
     fragment_pose_refinement: FragmentPoseRefinementConfig = FragmentPoseRefinementConfig()
+
+    estimate_depth_confidences: bool = True
 
     optimize_depth_pose: bool = True
     use_fragment_dataset_cache: bool = True
