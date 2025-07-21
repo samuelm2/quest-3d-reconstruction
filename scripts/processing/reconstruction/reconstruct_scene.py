@@ -1,3 +1,4 @@
+from typing import Optional
 import open3d as o3d
 
 from config.reconstruction_config import ReconstructionConfig
@@ -15,6 +16,7 @@ def reconstruct_scene(data_io: DataIO):
     # TODO: Inject as an argument
     config = ReconstructionConfig()
 
+    # Depth confidence estimation
     if config.estimate_depth_confidences:
         log_step("Estimate depth confidences")
         estimate_depth_confidences(
@@ -22,6 +24,7 @@ def reconstruct_scene(data_io: DataIO):
             config=config.confidence_estimation
         )
 
+    # Depth pose optimization
     if config.optimize_depth_pose:
         optimizer = DepthPoseOptimizer(
             depth_data_io=data_io.depth,
@@ -42,18 +45,42 @@ def reconstruct_scene(data_io: DataIO):
             )
             depth_dataset_map[side] = dataset
 
+    # TSDF integration
+    vbg: Optional[o3d.t.geometry.VoxelBlockGrid] = None
+    if config.use_colorless_vbg_cache:
+        vbg = data_io.rgbd.load_colorless_vbg()
+
+    if vbg is None:
+        log_step("Integrate depth maps")
+        integration_config = config.depth_integration
+
+        for side, dataset in depth_dataset_map.items():
+            vbg = integrate(
+                dataset=dataset, 
+                depth_data_io=data_io.depth, 
+                side=side, 
+                use_confidence_filtered_depth=integration_config.use_confidence_filtered_depth,
+                confidence_threshold=integration_config.confidence_threshold,
+                voxel_size=integration_config.voxel_size,
+                block_resolution=integration_config.block_resolution,
+                block_count=integration_config.block_count,
+                depth_max=integration_config.depth_max,
+                trunc_voxel_multiplier=integration_config.trunc_voxel_multiplier,
+                device=integration_config.device,
+                show_progress=True,
+                desc=f"[{side.name}] Integrating depth maps ...",
+                vbg_opt=vbg
+            )
+
+    if vbg is None:
+        print("[Error] Failed to generate VoxelBlockGrid. Please check the integration parameters and input data.")
+        return
+
+    data_io.rgbd.save_colorless_vbg(vbg=vbg)
+
     print("[Info] Visualizing the generated point cloud...")
     pcds = []
-    for side, dataset in depth_dataset_map.items():
-        vgb = integrate(
-            dataset, 
-            data_io.depth, 
-            side, 
-            True, 0.05,
-            0.01, 16, 50_000, 1.5, 8.0, 
-            o3d.core.Device("CUDA:0")
-        )
-        pcds.append(vgb.extract_point_cloud())
+    pcds.append(vbg.extract_point_cloud())
 
     legacy_pcds = [pcd.to_legacy() for pcd in pcds]
 

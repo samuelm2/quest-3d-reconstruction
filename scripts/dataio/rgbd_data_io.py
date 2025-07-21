@@ -1,4 +1,6 @@
+from typing import Optional
 import numpy as np
+import open3d as o3d
 from dataio.depth_data_io import DepthDataIO
 from dataio.image_data_io import ImageDataIO
 from config.project_path_config import RGBDPathConfig
@@ -18,7 +20,7 @@ class RGBDDataIO:
 
     
     def load_color_aligned_depth(self, side: Side, timestamp: int) -> np.ndarray:
-        color_aligned_depth_path = self.rgbd_path_config.get_color_aligned_depth_path(side, timestamp)
+        color_aligned_depth_path = self.rgbd_path_config.get_color_aligned_depth_path(side=side, timestamp=timestamp)
         
         if not color_aligned_depth_path.exists():
             raise FileNotFoundError(f"Color-aligned depth file not found: {color_aligned_depth_path}")
@@ -26,87 +28,72 @@ class RGBDDataIO:
         return np.load(color_aligned_depth_path)
     
 
-    def save_color_aligned_depth(self, side: Side, timestamp: int, depth_data: np.ndarray) -> None:
-        color_aligned_depth_path = self.rgbd_path_config.get_color_aligned_depth_path(side, timestamp)        
+    def save_color_aligned_depth(self, depth_map: np.ndarray, side: Side, timestamp: int):
+        color_aligned_depth_path = self.rgbd_path_config.get_color_aligned_depth_path(side=side, timestamp=timestamp)
         color_aligned_depth_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        np.save(color_aligned_depth_path, depth_data)
 
+        np.save(color_aligned_depth_path, depth_map)
+
+
+    def load_colorless_vbg(self) -> Optional[o3d.t.geometry.VoxelBlockGrid]:
+        colorless_vbg_path = self.rgbd_path_config.get_colorless_vbg_path()
+
+        if not colorless_vbg_path.exists():
+            return None
+        
+        return o3d.t.geometry.VoxelBlockGrid.load(str(colorless_vbg_path))
     
-    def load_rgbd_dataset(self, side: Side, use_cache: bool = True) -> CameraDataset:
-        rgbd_dataset_path = self.rgbd_path_config.get_RGBD_dataset_path(side=side)
 
-        if use_cache and rgbd_dataset_path.exists():
-            try:
-                print(f"[Info] Loading cached RGBD dataset for {side.name} from {rgbd_dataset_path} ...")
-                return CameraDataset.load(rgbd_dataset_path)
-            except Exception as e:
-                print(f"[Error] RGBD dataset cache is corrupted or invalid. Rebuilding cache from the original source...\n{e}")
+    def save_colorless_vbg(self, vbg: o3d.t.geometry.VoxelBlockGrid):
+        colorless_vbg_path = self.rgbd_path_config.get_colorless_vbg_path()
+        colorless_vbg_path.parent.mkdir(parents=True, exist_ok=True)
 
-        else:
-            print(f"[Info] RGBD dataset not found. Rebuilding cache from the original source...")
-
-        rgbd_dataset = self.build_rgbd_dataset(side=side, use_cache=use_cache)
-        rgbd_dataset.save(rgbd_dataset_path)
-
-        return rgbd_dataset
+        vbg.save(str(colorless_vbg_path))
 
 
-    def build_rgbd_dataset(
-        self, side: Side,
-        use_cache: bool = True,
-        interval_ms: int = 100,
-    ) -> CameraDataset:
-        depth_dataset = self.depth_data_io.load_depth_dataset(side=side, use_cache=use_cache)
-        color_dataset = self.image_data_io.load_color_dataset(side=side, use_cache=use_cache)
+    def load_color_vbg(self) -> Optional[o3d.t.geometry.VoxelBlockGrid]:
+        color_vbg_path = self.rgbd_path_config.get_color_vbg_path()
 
-        if len(depth_dataset.timestamps) == 0 or len(color_dataset.timestamps) == 0:
-            raise ValueError(f"No data available for side {side.name}. Ensure that both depth and color datasets are loaded.")
+        if not color_vbg_path.exists():
+            return None
         
-        interval_indices = self.split_dual_timestamps(
-            base_timestamps=depth_dataset.timestamps,
-            other_timestamps=color_dataset.timestamps,
-            interval_ms=interval_ms
+        return o3d.t.geometry.VoxelBlockGrid.load(str(color_vbg_path))
+    
+
+    def save_color_vbg(self, vbg: o3d.t.geometry.VoxelBlockGrid):
+        color_vbg_path = self.rgbd_path_config.get_color_vbg_path()
+        color_vbg_path.parent.mkdir(parents=True, exist_ok=True)
+
+        vbg.save(str(color_vbg_path))
+
+
+    def load_color_pcd(self, device: o3d.core.Device) -> Optional[o3d.t.geometry.PointCloud]:
+        color_pcd_path = self.rgbd_path_config.get_color_pcd_path()
+
+        if not color_pcd_path.exists():
+            return None
+        
+        pcd_legacy = o3d.io.read_point_cloud(
+            filename=str(color_pcd_path),
+            format='auto',
+            remove_nan_points=True,
+            remove_infinite_points=True,            
         )
+        
+        return o3d.t.geometry.PointCloud.from_legacy(
+            pcd_legacy=pcd_legacy,
+            device=device
+        )
+    
 
-        pass
+    def save_color_pcd(self, pcd: o3d.t.geometry.PointCloud):
+        color_pcd_path = self.rgbd_path_config.get_color_pcd_path()
+        color_pcd_path.parent.mkdir(parents=True, exist_ok=True)
 
-
-
-    @staticmethod
-    def split_dual_timestamps(
-        base_timestamps: np.ndarray, 
-        other_timestamps: np.ndarray,
-        interval_ms: int
-    ) -> list[
-    tuple[
-        tuple[int, int], 
-        tuple[int, int]
-    ]
-]:
-        start_time = base_timestamps[0]
-        end_time = base_timestamps[-1]
-
-        bin_edges = np.arange(start_time, end_time + interval_ms, interval_ms)
-
-        interval_indices = []
-
-        for i in range(len(bin_edges) - 1):
-            bin_start = bin_edges[i]
-            bin_end = bin_edges[i + 1]
-
-            start_idx_base = np.searchsorted(base_timestamps, bin_start, side='left')
-            end_idx_base = np.searchsorted(base_timestamps, bin_end, side='right')
-
-            if start_idx_base == end_idx_base:
-                continue
-
-            start_idx_other = np.searchsorted(other_timestamps, bin_start, side='left')
-            end_idx_other = np.searchsorted(other_timestamps, bin_end, side='right')
-
-            if start_idx_other == end_idx_other:
-                continue
-
-            interval_indices.append(((start_idx_base, end_idx_base), (start_idx_other, end_idx_other)))
-
-        return interval_indices
+        o3d.io.write_point_cloud(
+            filename=str(color_pcd_path),
+            pointcloud=pcd.to_legacy(),
+            format='auto',
+            write_ascii=False,
+            compressed=True
+        )

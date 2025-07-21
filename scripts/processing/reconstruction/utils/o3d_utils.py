@@ -34,6 +34,29 @@ def convert_transforms_to_pose_graph(transforms: Transforms) -> o3d.pipelines.re
     return pose_graph
 
 
+def convert_dataset_to_trajectory(dataset: CameraDataset) -> o3d.camera.PinholeCameraTrajectory:
+    param_list = []
+
+    intrinsic_matrices = compute_o3d_intrinsic_matrices(dataset=dataset)
+    extrinsic_matrices = dataset.transforms.convert_coordinate_system(
+        target_coordinate_system=CoordinateSystem.OPEN3D,
+        is_camera=True
+    ).extrinsics_wc
+
+    for i in range(len(dataset)):
+        params = o3d.camera.PinholeCameraParameters()
+
+        params.extrinsic = extrinsic_matrices[i]
+        params.intrinsic = intrinsic_matrices[i]
+
+        param_list.append(params)
+
+    trajectory = o3d.camera.PinholeCameraTrajectory()
+    trajectory.parameters = param_list
+
+    return trajectory
+
+
 def convert_pose_graph_to_transforms(pose_graph: o3d.pipelines.registration.PoseGraph) -> Transforms:
     pose = np.array([node.pose for node in pose_graph.nodes])
 

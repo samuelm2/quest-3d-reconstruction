@@ -60,11 +60,6 @@ OPTIMIZED_DEPTH_DATASET_NPZ_MAP = {
     Side.RIGHT: 'dataset/right_depth_dataset_optimized.npz',
 }
 
-RGBD_DATASET_NPZ_MAP = {
-    Side.LEFT: 'dataset/left_rgbd_dataset.npz',
-    Side.RIGHT: 'dataset/right_rgbd_dataset.npz',
-}
-
 COLOR_ALIGNED_DEPTH_DIR_MAP = {
     Side.LEFT: 'left_color_aligned_depth',
     Side.RIGHT: 'right_color_aligned_depth'
@@ -186,13 +181,21 @@ class RGBDPathConfig:
         color_aligned_depth_dir = self.get_color_aligned_depth_dir(side=side)
         return color_aligned_depth_dir / self.get_color_aligned_depth_filename(timestamp=timestamp)
 
+
+    def get_colorless_vbg_path(self) -> Path:
+        return self.project_dir / "reconstruction/colorless_vbg.npz"
+
+
+    def get_color_vbg_path(self) -> Path:
+        return self.project_dir / "reconstruction/color_vbg.npz"
+    
+
+    def get_color_pcd_path(self) -> Path:
+        return self.project_dir / "reconstruction/color.pcd"
+
     
     def get_relative_path(self, path: Path) -> Path:
         return path.relative_to(self.project_dir)
-    
-
-    def get_RGBD_dataset_path(self, side: Side) -> Path:
-        return self.project_dir / RGBD_DATASET_NPZ_MAP[side]
 
 
 class ReconstructionPathConfig:
@@ -224,11 +227,12 @@ class ReconstructionPathConfig:
 
     def get_fragment_pcd_path(self, side: Side, index: int) -> Path:
         return self.project_dir / FRAGMENT_PCD_CACHE_DIR_PATH / f'{side.name}_fragment_{index}.pcd'
-
+    
 
 class ProjectPathConfig:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
         self.image = ImagePathConfig(project_dir=project_dir)
         self.depth = DepthPathConfig(project_dir=project_dir)
+        self.rgbd = RGBDPathConfig(project_dir=project_dir)
         self.reconstruction = ReconstructionPathConfig(project_dir=project_dir)
