@@ -30,6 +30,11 @@ COLOR_DATASET_NPZ_MAP = {
     Side.RIGHT: 'dataset/right_camera_dataset.npz',
 }
 
+OPTIMIZED_COLOR_DATASET_NPZ_MAP = {
+    Side.LEFT: 'dataset/left_camera_dataset_optimized.npz',
+    Side.RIGHT: 'dataset/right_camera_dataset_optimized.npz',
+}
+
 DEPTH_DIR_MAP = {
     Side.LEFT: 'left_depth',
     Side.RIGHT: 'right_depth'
@@ -108,6 +113,10 @@ class ImagePathConfig:
 
     def get_color_dataset_path(self, side: Side) -> Path:
         return self.project_dir / COLOR_DATASET_NPZ_MAP[side]
+    
+
+    def get_optimized_color_dataset_path(self, side: Side) -> Path:
+        return self.project_dir / OPTIMIZED_COLOR_DATASET_NPZ_MAP[side]
 
 
     def get_relative_path(self, path: Path) -> Path:
@@ -182,22 +191,6 @@ class RGBDPathConfig:
         return color_aligned_depth_dir / self.get_color_aligned_depth_filename(timestamp=timestamp)
 
 
-    def get_colorless_vbg_path(self) -> Path:
-        return self.project_dir / "reconstruction/colorless_vbg.npz"
-
-
-    def get_color_vbg_path(self) -> Path:
-        return self.project_dir / "reconstruction/color_vbg.npz"
-    
-
-    def get_color_pcd_path(self) -> Path:
-        return self.project_dir / "reconstruction/color.pcd"
-
-    
-    def get_relative_path(self, path: Path) -> Path:
-        return path.relative_to(self.project_dir)
-
-
 class ReconstructionPathConfig:
     def __init__(self, project_dir: Path):
         self.project_dir = project_dir
@@ -228,6 +221,22 @@ class ReconstructionPathConfig:
     def get_fragment_pcd_path(self, side: Side, index: int) -> Path:
         return self.project_dir / FRAGMENT_PCD_CACHE_DIR_PATH / f'{side.name}_fragment_{index}.pcd'
     
+
+    def get_colorless_vbg_path(self) -> Path:
+        return self.project_dir / "reconstruction/colorless_vbg.npz"
+
+
+    def get_colored_mesh_path(self) -> Path:
+        return self.project_dir / "reconstruction/color_mesh.ply"
+    
+
+    def get_colored_pcd_path(self) -> Path:
+        return self.project_dir / "reconstruction/color.pcd"
+
+    
+    def get_relative_path(self, path: Path) -> Path:
+        return path.relative_to(self.project_dir)
+
 
 class ProjectPathConfig:
     def __init__(self, project_dir: Path):

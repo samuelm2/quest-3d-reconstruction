@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import Generator, Optional, cast
 import numpy as np
 import open3d as o3d
 from scipy.spatial.transform import Rotation as R
@@ -231,3 +231,24 @@ def integrate(
             integrate(index)
 
     return vbg
+
+
+def raycast_in_color_view(
+    scene: o3d.t.geometry.RaycastingScene,
+    dataset: CameraDataset
+) -> Generator[np.ndarray, None, None]:
+    intrinsic_matrices = compute_o3d_intrinsic_matrices(dataset=dataset)
+    extrinsic_matrices = dataset.transforms.extrinsics_wc
+
+    for i in range(len(dataset)):
+        intrinsic = o3d.core.Tensor(intrinsic_matrices[i], dtype=o3d.core.Dtype.Float32)
+        extrinsic = o3d.core.Tensor(extrinsic_matrices[i], dtype=o3d.core.Dtype.Float32)
+        width = dataset.widths[i]
+        height = dataset.heights[i]
+
+        rays = scene.create_rays_pinhole(intrinsic, extrinsic, width_px=width, height_px=height)
+        result = scene.cast_rays(rays)
+
+        depth = result['t_hit'].cpu().numpy()
+
+        yield depth

@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 import numpy as np
 import cv2
 import pandas as pd
@@ -177,6 +178,23 @@ class ImageDataIO:
         color_dataset.save(camera_dataset_path)
 
         return color_dataset
+    
+
+    def load_optimized_color_dataset(self, side: Side) -> Optional[CameraDataset]:
+        optimized_dataset_path = self.image_path_config.get_optimized_color_dataset_path(side=side)
+
+        if optimized_dataset_path.exists():
+            try:
+                return CameraDataset.load(optimized_dataset_path)
+            except Exception as e:
+                print(f"[Error] Optimized color dataset cache is corrupted or invalid.")
+
+    
+    def save_optimized_color_dataset(self, dataset: CameraDataset, side: Side):
+        optimized_dataset_path = self.image_path_config.get_optimized_color_dataset_path(side=side)
+        optimized_dataset_path.parent.mkdir(parents=True, exist_ok=True)
+
+        dataset.save(optimized_dataset_path)
 
 
     def build_color_dataset(self, side: Side) -> CameraDataset:

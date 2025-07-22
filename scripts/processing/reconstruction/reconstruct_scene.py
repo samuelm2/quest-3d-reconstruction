@@ -1,16 +1,17 @@
 from typing import Optional
 import open3d as o3d
+from tqdm import tqdm
 
 from config.reconstruction_config import ReconstructionConfig
 from dataio.data_io import DataIO
-from models.camera_dataset import DepthDataset
+from models.camera_dataset import CameraDataset, DepthDataset
 from models.side import Side
 from models.transforms import CoordinateSystem
 from processing.reconstruction.color_map_optimization.optimize_color_pose import optimize_color_pose
 from processing.reconstruction.confidence_estimation.estimate_depth_confidences import estimate_depth_confidences
 from processing.reconstruction.depth_optimization.depth_pose_optimizer import DepthPoseOptimizer
 from processing.reconstruction.utils.log_utils import log_step
-from processing.reconstruction.utils.o3d_utils import integrate
+from processing.reconstruction.utils.o3d_utils import integrate, raycast_in_color_view
 
 
 def reconstruct_scene(data_io: DataIO):
@@ -55,7 +56,7 @@ def reconstruct_scene(data_io: DataIO):
     # TSDF integration
     vbg: Optional[o3d.t.geometry.VoxelBlockGrid] = None
     if config.use_colorless_vbg_cache:
-        vbg = data_io.rgbd.load_colorless_vbg()
+        vbg = data_io.reconstruction.load_colorless_vbg()
 
     if vbg is None:
         log_step("Integrate depth maps")
@@ -83,7 +84,7 @@ def reconstruct_scene(data_io: DataIO):
         print("[Error] Failed to generate VoxelBlockGrid. Please check the integration parameters and input data.")
         return
 
-    data_io.rgbd.save_colorless_vbg(vbg=vbg)
+    data_io.reconstruction.save_colorless_vbg(vbg=vbg)
 
     if config.visualize_colorless_pcd:
         print("[Info] Visualizing colorless point cloud ...")
@@ -93,12 +94,65 @@ def reconstruct_scene(data_io: DataIO):
         o3d.visualization.draw_geometries(pcds + [axis], window_name="Colorless Point Cloud") # type: ignore        
 
     # Color map optimization
+    optimized_color_dataset_map = None
     if config.optimize_color_pose:
         log_step("Optimize color maps")
         colored_mesh, optimized_color_dataset_map = optimize_color_pose(vbg=vbg, data_io=data_io, config=config.color_optimization)
+
+        data_io.reconstruction.save_colored_mesh_legacy(mesh=colored_mesh)
+
+        for side, optimized_dataset in optimized_color_dataset_map.items():
+            data_io.color.save_optimized_color_dataset(dataset=optimized_dataset, side=side)
 
         if config.visualize_colored_mesh:
             print("[Info] Visualizing colored mesh ...")
             pcds = [colored_mesh]
             axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
             o3d.visualization.draw_geometries(pcds + [axis], window_name="Colored Mesh") # type: ignore        
+
+        if config.sample_point_cloud_from_colored_mesh:
+            vertex_count = len(colored_mesh.vertices)
+            num_sampled_points = int(vertex_count * config.points_per_vertex_ratio)
+
+            pcd = colored_mesh.sample_points_uniformly(
+                number_of_points=num_sampled_points,
+            )
+
+            data_io.reconstruction.save_colored_pcd_legacy(pcd=pcd)
+
+    # Color aligned depth rendering
+    if config.render_color_aligned_depth:
+        log_step("Render color-aligned depth")
+
+        mesh = vbg.extract_triangle_mesh(
+            weight_threshold=config.color_aligned_depth_rendering.weight_threshold,
+            estimated_vertex_number=config.color_aligned_depth_rendering.estimated_vertex_number
+        )
+
+        scene = o3d.t.geometry.RaycastingScene(device=config.device)
+        scene.add_triangles(mesh.cpu())
+
+        def render_color_aligned_depth_map(dataset: CameraDataset, desc: str = ''):
+            depth_map_iter = raycast_in_color_view(scene=scene, dataset=dataset)
+
+            for i in tqdm(range(len(dataset)), desc=desc):
+                timestamp = dataset.timestamps[i]
+                depth_map = next(depth_map_iter)
+
+                data_io.rgbd.save_color_aligned_depth(depth_map=depth_map, side=side, timestamp=timestamp)
+
+        for side in Side:
+            color_dataset = data_io.color.load_color_dataset(side=side, use_cache=False)
+
+            if optimized_color_dataset_map is not None:
+                optimized_color_dataset = optimized_color_dataset_map[side]
+                optimized_timestamps = set(optimized_color_dataset.timestamps)
+
+                filtered_color_dataset = color_dataset[
+                    [i for i in range(len(color_dataset)) if color_dataset.timestamps[i] not in optimized_timestamps]
+                ]
+
+                render_color_aligned_depth_map(dataset=filtered_color_dataset, desc=f"[{side.name}] Rendering color aligned depth maps ...")
+                render_color_aligned_depth_map(dataset=optimized_color_dataset, desc=f"[{side.name}] Rendering optimized-color aligned depth maps ...")
+            else:
+                render_color_aligned_depth_map(dataset=color_dataset, desc=f"[{side.name}] Rendering color aligned depth maps ...")

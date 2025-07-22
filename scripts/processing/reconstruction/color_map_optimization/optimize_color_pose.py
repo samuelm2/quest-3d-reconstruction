@@ -1,4 +1,3 @@
-import numpy as np
 import open3d as o3d
 
 from config.reconstruction_config import ColorOptimizationConfig
@@ -6,31 +5,7 @@ from dataio.data_io import DataIO
 from models.camera_dataset import CameraDataset
 from models.side import Side
 from models.transforms import CoordinateSystem, Transforms
-from processing.reconstruction.utils.o3d_utils import compute_o3d_intrinsic_matrices, convert_dataset_to_trajectory, convert_trajectory_to_transforms
-
-
-def raycast_in_color_view(
-    scene: o3d.t.geometry.RaycastingScene,
-    dataset: CameraDataset
-) -> list[np.ndarray]:
-    intrinsic_matrices = compute_o3d_intrinsic_matrices(dataset=dataset)
-    extrinsic_matrices = dataset.transforms.extrinsics_wc
-
-    depth_maps = []
-
-    for i in range(len(dataset)):
-        intrinsic = o3d.core.Tensor(intrinsic_matrices[i], dtype=o3d.core.Dtype.Float32)
-        extrinsic = o3d.core.Tensor(extrinsic_matrices[i], dtype=o3d.core.Dtype.Float32)
-        width = dataset.widths[i]
-        height = dataset.heights[i]
-
-        rays = scene.create_rays_pinhole(intrinsic, extrinsic, width_px=width, height_px=height)
-        result = scene.cast_rays(rays)
-
-        depth = result['t_hit'].cpu().numpy()
-        depth_maps.append(depth)
-
-    return depth_maps
+from processing.reconstruction.utils.o3d_utils import convert_dataset_to_trajectory, convert_trajectory_to_transforms, raycast_in_color_view
 
 
 def optimize_color_pose(
@@ -64,15 +39,15 @@ def optimize_color_pose(
         side_trajectory = convert_dataset_to_trajectory(color_dataset)
         trajectory_params.extend(side_trajectory.parameters)
 
-        depth_maps = raycast_in_color_view(scene=scene, dataset=color_dataset)
-
         N = len(color_dataset.timestamps)
+
+        depth_map_iter = raycast_in_color_view(scene=scene, dataset=color_dataset)
 
         for i in range(N):
             timestamp = color_dataset.timestamps[i]
 
             color_map = data_io.color.load_rgb(side=side, timestamp=timestamp)
-            depth_map = depth_maps[i]
+            depth_map = next(depth_map_iter)
 
             color_map_o3d = o3d.geometry.Image(color_map)
             depth_map_o3d = o3d.geometry.Image(depth_map)
@@ -87,10 +62,13 @@ def optimize_color_pose(
     trajectory = o3d.camera.PinholeCameraTrajectory()
     trajectory.parameters = trajectory_params
 
-    colored_mesh, trajectory = o3d.pipelines.color_map.run_rigid_optimizer(
-        mesh.cpu().to_legacy(), rgbd_images, trajectory,
-        o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=config.max_iteration)
-    )
+    with o3d.utility.VerbosityContextManager(
+        o3d.utility.VerbosityLevel.Debug) as _:
+        colored_mesh, trajectory = o3d.pipelines.color_map.run_rigid_optimizer(
+            mesh.cpu().to_legacy(), rgbd_images, trajectory,
+            o3d.pipelines.color_map.RigidOptimizerOption(maximum_iteration=config.max_iteration)
+        )
+
     trajectory_transforms = convert_trajectory_to_transforms(trajectory=trajectory)
 
     start_index = 0

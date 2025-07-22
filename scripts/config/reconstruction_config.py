@@ -109,6 +109,12 @@ class ColorOptimizationConfig:
 
 
 @dataclass
+class ColorAlignedDepthRenderingConfig:
+    weight_threshold: float = 3.0
+    estimated_vertex_number: int = -1
+
+
+@dataclass
 class ReconstructionConfig:
     device: o3d.core.Device = o3d.core.Device("CUDA:0")
 
@@ -131,6 +137,13 @@ class ReconstructionConfig:
     optimize_color_pose: bool = True
     visualize_colored_mesh: bool = True
 
+    # Step 5: Sample point cloud from colored mesh
+    sample_point_cloud_from_colored_mesh: bool = True
+    points_per_vertex_ratio: float = 1.0
+
+    # Step 6: Color-aligned depth map generation
+    render_color_aligned_depth: bool = True
+
 
     def __init__(self):
         self.confidence_estimation = DepthConfidenceEstimationConfig()
@@ -138,3 +151,4 @@ class ReconstructionConfig:
         self.fragment_pose_refinement = FragmentPoseRefinementConfig(device=self.device)
         self.depth_integration = IntegrationConfig(device=self.device)
         self.color_optimization = ColorOptimizationConfig(device=self.device)
+        self.color_aligned_depth_rendering = ColorAlignedDepthRenderingConfig()
