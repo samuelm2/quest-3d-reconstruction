@@ -10,7 +10,7 @@ YUV_DIR_MAP = {
 
 RGB_DIR_MAP = {
     Side.LEFT: 'left_camera_rgb',
-    Side.RIGHT: 'right_camera_tgb'
+    Side.RIGHT: 'right_camera_rgb'
 }
 
 CAMERA_CHARACTERISTICS_JSON_MAP = {

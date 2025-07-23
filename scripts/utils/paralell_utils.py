@@ -57,7 +57,7 @@ def parallel_map(
     with ctx.Pool(processes=max_workers) as pool:
         if show_progress:
             from tqdm import tqdm
-            results = list(tqdm(pool.imap(worker, args_list), total=len(args_list), desc=desc))
+            results = list(tqdm(pool.imap_unordered(worker, args_list), total=len(args_list), desc=desc))
         else:
             results = pool.map(worker, args_list)
 

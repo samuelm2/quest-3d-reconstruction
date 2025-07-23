@@ -10,9 +10,6 @@ dependencies:
   - pandas
   - tqdm
   - opencv
-  - pytorch
-  - torchvision
-  - torchaudio
   - cudatoolkit=11.8
   - pyyaml
   - pip

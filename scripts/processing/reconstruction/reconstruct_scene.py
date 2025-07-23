@@ -139,17 +139,19 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
                 data_io.rgbd.save_color_aligned_depth(depth_map=depth_map, side=side, timestamp=timestamp)
 
         for side in Side:
-            color_dataset = data_io.color.load_color_dataset(side=side, use_cache=False)
+            color_dataset = data_io.color.load_color_dataset(side=side, use_cache=True)
 
             if optimized_color_dataset_map is not None:
                 optimized_color_dataset = optimized_color_dataset_map[side]
-                optimized_timestamps = set(optimized_color_dataset.timestamps)
 
-                filtered_color_dataset = color_dataset[
-                    [i for i in range(len(color_dataset)) if color_dataset.timestamps[i] not in optimized_timestamps]
-                ]
+                if not config.color_aligned_depth_rendering.only_use_optimized_dataset:
+                    optimized_timestamps = set(optimized_color_dataset.timestamps)
+                    filtered_color_dataset = color_dataset[
+                        [i for i in range(len(color_dataset)) if color_dataset.timestamps[i] not in optimized_timestamps]
+                    ]
+                    render_color_aligned_depth_map(dataset=filtered_color_dataset, desc=f"[{side.name}] Rendering color aligned depth maps ...")
 
-                render_color_aligned_depth_map(dataset=filtered_color_dataset, desc=f"[{side.name}] Rendering color aligned depth maps ...")
                 render_color_aligned_depth_map(dataset=optimized_color_dataset, desc=f"[{side.name}] Rendering optimized-color aligned depth maps ...")
             else:
-                render_color_aligned_depth_map(dataset=color_dataset, desc=f"[{side.name}] Rendering color aligned depth maps ...")
+                if not config.color_aligned_depth_rendering.only_use_optimized_dataset:
+                    render_color_aligned_depth_map(dataset=color_dataset, desc=f"[{side.name}] Rendering color aligned depth maps ...")

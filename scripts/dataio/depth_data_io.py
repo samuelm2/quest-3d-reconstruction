@@ -92,13 +92,16 @@ class DepthDataIO:
     def load_confidence_map(self, side: Side, timestamp: int) -> Optional[ConfidenceMap]:
         confidence_map_path = self.depth_path_config.get_depth_confidence_map_path(side=side, timestamp=timestamp)
 
-        if confidence_map_path.exists():           
-            data = np.load(confidence_map_path)
-            return ConfidenceMap(
-                confidence_map=data['confidence_map'],
-                valid_mask=data['valid_mask']
-            )
-        
+        if confidence_map_path.exists():
+            try:
+                data = np.load(confidence_map_path)
+                return ConfidenceMap(
+                    confidence_map=data['confidence_map'],
+                    valid_mask=data['valid_mask']
+                )
+            except Exception as e:
+                print(f"[Error] Failed to load confidence map for {side.name} at timestamp {timestamp}: {e}")
+
 
     def save_confidence_map(self, side: Side, timestamp: int, confidence_map: ConfidenceMap) -> None:
         confidence_map_path = self.depth_path_config.get_depth_confidence_map_path(side=side, timestamp=timestamp)

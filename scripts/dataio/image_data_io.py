@@ -223,7 +223,10 @@ class ImageDataIO:
 
             position, rotation = pose
             hmd_positions.append(position)
-            hmd_rotations.append(rotation)        
+            hmd_rotations.append(rotation)
+
+        if len(timestamps) == 0:
+            raise Exception("[Error] No valid timestamps found. Unable to build color dataset for side: {}.".format(side.name))
 
         hmd_transforms = Transforms(
             coordinate_system=CoordinateSystem.UNITY,

@@ -82,10 +82,11 @@ reconstruction:
   color_optimization:
     weight_threshold: 3.0  # Minimum TSDF weight to retain voxel during optimization
     estimated_vertex_number: -1  # Optional: estimate number of vertices (-1 to auto-compute)
-    interval: 10  # Keyframe interval for color pose optimization
+    interval: 100  # Keyframe interval for color pose optimization
     max_iteration: 100  # Max number of iterations for pose refinement
     use_dataset_cache: true
 
   color_aligned_depth_rendering:
     weight_threshold: 3.0  # Minimum TSDF weight to extract mesh surface
     estimated_vertex_number: -1
+    only_use_optimized_dataset: true
