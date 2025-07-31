@@ -57,7 +57,7 @@ class ImageDataIO:
 
     def save_bgr(self, bgr: np.ndarray, side: Side, timestamp: int):
         file_path = self.image_path_config.get_rgb_file_path(side=side, timestamp=timestamp)
-        file_path.mkdir(parents=True, exist_ok=True)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
 
         cv2.imwrite(str(file_path), bgr)
 
