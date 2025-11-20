@@ -110,7 +110,14 @@ def reconstruct_scene(data_io: DataIO, config: ReconstructionConfig):
 
         if config.sample_point_cloud_from_colored_mesh:
             vertex_count = len(colored_mesh.vertices)
-            num_sampled_points = int(vertex_count * config.points_per_vertex_ratio)
+            
+            # Use target_num_points if specified, otherwise use ratio
+            if config.target_num_points > 0:
+                num_sampled_points = config.target_num_points
+                print(f"[Info] Sampling {num_sampled_points} points (target count) from mesh with {vertex_count} vertices")
+            else:
+                num_sampled_points = int(vertex_count * config.points_per_vertex_ratio)
+                print(f"[Info] Sampling {num_sampled_points} points ({config.points_per_vertex_ratio}x ratio) from mesh with {vertex_count} vertices")
 
             pcd = colored_mesh.sample_points_uniformly(
                 number_of_points=num_sampled_points,

@@ -197,7 +197,7 @@ def main(args):
 
     print(f"[Info] Output COLMAP project will be saved to: {args.output_dir}")
 
-    model_dir = args.output_dir / "distorted/sparse/0"
+    model_dir = args.output_dir / "sparse/0"
     input_dir = args.output_dir / "images"
 
     model_dir.mkdir(parents=True, exist_ok=True)

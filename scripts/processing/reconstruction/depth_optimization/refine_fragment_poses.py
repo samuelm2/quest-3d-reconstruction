@@ -63,10 +63,17 @@ def integrate_and_save_fragment_point_clouds(
         desc="[Info] Integrating Fragments..."
     )
 
-    if any(result is None for result in results):
-        raise Exception("Failed to integrate fragment point clouds.")
+    # Filter out failed fragments instead of crashing
+    failed_count = sum(1 for result in results if result is None)
+    if failed_count > 0:
+        print(f"[Warning] {failed_count} out of {len(results)} fragments failed to integrate (empty or invalid depth data). Continuing with valid fragments...")
     
-    frag_vbg_list = cast(list[tuple[Side, o3d.t.geometry.PointCloud]], results)
+    frag_vbg_list = [result for result in results if result is not None]
+    
+    if len(frag_vbg_list) == 0:
+        raise Exception("All fragment point clouds failed to integrate. Cannot continue.")
+    
+    frag_vbg_list = cast(list[tuple[Side, o3d.t.geometry.PointCloud]], frag_vbg_list)
 
     indices_map: dict[Side, int] = {}
     for side, pcd in frag_vbg_list:

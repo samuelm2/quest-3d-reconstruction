@@ -126,6 +126,7 @@ class ReconstructionConfig:
 
     # Step 5: Sample point cloud from colored mesh
     sample_point_cloud_from_colored_mesh: bool = True
+    target_num_points: int = -1  # Target number of points to sample (-1 to use ratio instead)
     points_per_vertex_ratio: float = 1.0
 
     # Step 6: Color-aligned depth map generation

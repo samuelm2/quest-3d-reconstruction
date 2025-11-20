@@ -17,28 +17,29 @@ reconstruction:
   use_dataset_cache: true  # Use preprocessed depth/color datasets if available
   estimate_depth_confidences: true  # Estimate depth confidence maps via multi-view geometric consistency
   optimize_depth_pose: true  # Optimize per-frame camera poses based on depth map consistency
-  use_fragment_dataset_cache: true  # Use cached fragments if available
+  use_fragment_dataset_cache: false  # Use cached fragments if available
   use_optimized_dataset_cache: true  # Use cached optimized depth datasets if available
   use_colorless_vbg_cache: true  # Use precomputed TSDF (VoxelBlockGrid) without color
   visualize_colorless_pcd: true  # Visualize the integrated point cloud before color refinement
   optimize_color_pose: true  # Optimize the poses of color images via mesh-to-image alignment
   visualize_colored_mesh: true  # Visualize the colorized mesh after pose optimization
   sample_point_cloud_from_colored_mesh: true  # Sample a dense point cloud from the colored mesh
-  points_per_vertex_ratio: 2.0  # Number of points to sample per mesh vertex
+  target_num_points: 100000  # Target number of points for COLMAP (-1 to use ratio instead)
+  points_per_vertex_ratio: 2.0  # Number of points to sample per mesh vertex (used only if target_num_points is -1)
   render_color_aligned_depth: true  # Render synthetic depth maps aligned to the color images
 
   confidence_estimation:
-    target_frame_range: 10  # Number of adjacent frames to compare for consistency
+    target_frame_range: 4  # Number of adjacent frames to compare for consistency (reduced for 3fps capture)
     depth_max: 3.0  # Maximum depth value considered during reprojection
     error_threshold: 0.05  # Distance threshold to consider a correspondence as inconsistent
-    skip_if_output_dir_exists: true  # Recompute even if confidence output directory already exist
+    skip_if_output_dir_exists: false  # Recompute even if confidence output directory already exist
     use_multi_threading: true  # Enable multi-threaded confidence computation
 
   fragment_generation:
-    fragment_size: 100  # Number of frames per fragment
+    fragment_size: 15  # Number of frames per fragment (adjusted for 3fps capture)
     use_confidence_filtered_depth: true  # Use only confident depth pixels for pose estimation
     confidence_threshold: 0.05  # Minimum confidence score to keep a depth pixel
-    valid_count_threshold: 4 # Minimum number of supporting observations required to consider a depth pixel valid
+    valid_count_threshold: 2 # Minimum number of supporting observations required to consider a depth pixel valid
     depth_max: 3.0  # Max depth value used for fragment-level processing
     odometry_loop_interval: 10  # Frequency (in fragments) to check for loop closure
     overlap_ratio_threshold: 0.1  # Overlap ratio threshold to consider loop candidates
@@ -50,7 +51,7 @@ reconstruction:
   fragment_pose_refinement:
     use_confidence_filtered_depth: true
     confidence_threshold: 0.05
-    valid_count_threshold: 4 # Minimum number of supporting observations required to consider a depth pixel valid
+    valid_count_threshold: 2 # Minimum number of supporting observations required to consider a depth pixel valid
     voxel_size: 0.01  # TSDF voxel size
     block_resolution: 16  # Resolution of each voxel block (in voxels)
     block_count: 50000  # Total number of blocks in the TSDF volume
@@ -75,7 +76,7 @@ reconstruction:
   depth_integration:
     use_confidence_filtered_depth: true
     confidence_threshold: 0.05
-    valid_count_threshold: 4
+    valid_count_threshold: 2
     voxel_size: 0.01
     block_resolution: 16
     block_count: 50000
@@ -84,10 +85,10 @@ reconstruction:
 
   color_optimization:
     weight_threshold: 3.0  # Minimum TSDF weight to retain voxel during optimization
-    estimated_vertex_number: -1  # Optional: estimate number of vertices (-1 to auto-compute)
-    interval: 100  # Keyframe interval for color pose optimization
-    max_iteration: 100  # Max number of iterations for pose refinement
-    use_dataset_cache: true
+    estimated_vertex_number: -1  # Auto-compute vertex count (-1 = no limit)
+    interval: 10  # Use every 10th frame for color optimization to reduce memory with 1280x1280 images
+    max_iteration: 50  # Reduced iterations to save memory
+    use_dataset_cache: false
 
   color_aligned_depth_rendering:
     weight_threshold: 3.0  # Minimum TSDF weight to extract mesh surface
