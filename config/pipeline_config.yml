@@ -20,9 +20,9 @@ reconstruction:
   use_fragment_dataset_cache: false  # Use cached fragments if available
   use_optimized_dataset_cache: true  # Use cached optimized depth datasets if available
   use_colorless_vbg_cache: true  # Use precomputed TSDF (VoxelBlockGrid) without color
-  visualize_colorless_pcd: true  # Visualize the integrated point cloud before color refinement
+  visualize_colorless_pcd: false  # Visualize the integrated point cloud before color refinement
   optimize_color_pose: true  # Optimize the poses of color images via mesh-to-image alignment
-  visualize_colored_mesh: true  # Visualize the colorized mesh after pose optimization
+  visualize_colored_mesh: false  # Visualize the colorized mesh after pose optimization
   sample_point_cloud_from_colored_mesh: true  # Sample a dense point cloud from the colored mesh
   target_num_points: 100000  # Target number of points for COLMAP (-1 to use ratio instead)
   points_per_vertex_ratio: 2.0  # Number of points to sample per mesh vertex (used only if target_num_points is -1)
