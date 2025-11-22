@@ -1,25 +1,25 @@
 yuv_to_rgb:
-  blur_filter: False     # Enable image blur filtering
+  blur_filter: false     # Enable image blur filtering
   blur_threshold: 50.0   # Threshold for blur detection using Laplacian variance
-  exposure_filter: False       # Enable image exposure filtering
+  exposure_filter: false       # Enable image exposure filtering
   exposure_threshold_low: 0.05  # Underexposure detection threshold
   exposure_threshold_high: 0.05 # Overexposure detection threshold
 
 depth_to_linear:
   clip_near_m: 0.1 # Near clipping distance in meters for linear depth visualization
   clip_far_m: 3.0  # Far clipping distance in meters for linear depth visualization
-  use_cache: True # Whether to use the depth dataset cache
+  use_cache: false # Whether to use the depth dataset cache
 
 reconstruction:
   device: "CUDA:0"  # Device to run Open3D Tensor operations (e.g., CUDA-enabled GPU)
 
   # pipeline
-  use_dataset_cache: true  # Use preprocessed depth/color datasets if available
+  use_dataset_cache: false  # Use preprocessed depth/color datasets if available
   estimate_depth_confidences: true  # Estimate depth confidence maps via multi-view geometric consistency
   optimize_depth_pose: true  # Optimize per-frame camera poses based on depth map consistency
   use_fragment_dataset_cache: false  # Use cached fragments if available
-  use_optimized_dataset_cache: true  # Use cached optimized depth datasets if available
-  use_colorless_vbg_cache: true  # Use precomputed TSDF (VoxelBlockGrid) without color
+  use_optimized_dataset_cache: false  # Use cached optimized depth datasets if available
+  use_colorless_vbg_cache: false  # Use precomputed TSDF (VoxelBlockGrid) without color
   visualize_colorless_pcd: false  # Visualize the integrated point cloud before color refinement
   optimize_color_pose: true  # Optimize the poses of color images via mesh-to-image alignment
   visualize_colored_mesh: false  # Visualize the colorized mesh after pose optimization
@@ -32,7 +32,7 @@ reconstruction:
     target_frame_range: 4  # Number of adjacent frames to compare for consistency (reduced for 3fps capture)
     depth_max: 3.0  # Maximum depth value considered during reprojection
     error_threshold: 0.05  # Distance threshold to consider a correspondence as inconsistent
-    skip_if_output_dir_exists: false  # Recompute even if confidence output directory already exist
+    skip_if_output_dir_exists: true  # Recompute even if confidence output directory already exist
     use_multi_threading: true  # Enable multi-threaded confidence computation
 
   fragment_generation:
@@ -86,7 +86,7 @@ reconstruction:
   color_optimization:
     weight_threshold: 3.0  # Minimum TSDF weight to retain voxel during optimization
     estimated_vertex_number: -1  # Auto-compute vertex count (-1 = no limit)
-    interval: 10  # Use every 10th frame for color optimization to reduce memory with 1280x1280 images
+    interval: 20  # Use every 20th frame for color optimization to reduce memory with 1280x1280 images
     max_iteration: 50  # Reduced iterations to save memory
     use_dataset_cache: false
 
