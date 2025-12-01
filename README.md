@@ -1,10 +1,6 @@
-# Meta Quest 3D Reconstruction
+# OpenQuestCapture 3D Reconstruction
 
-<p align="center">
-  <img src="docs/overview.png" alt="QuestRealityCapture" width="480"/>
-</p>
-
-**Reconstruct 3D scenes from image and depth data captured using [Quest Reality Capture (QRC)](https://github.com/t-34400/QuestRealityCapture/).**
+**Reconstruct 3D scenes from image and depth data captured using [OpenQuestCapture](https://github.com/samuelm2/OpenQuestCapture).**
 
 ---
 
@@ -31,7 +27,23 @@ conda activate mq3drecon
 
 ## 🔧 Processing Pipeline
 
-### Step 1: Convert Passthrough Images to RGB
+### Step 0: Unzip the data
+If your data is in a zip file, unzip it to a directory of your choice.
+
+### Option 1: End-to-End Pipeline (Recommended)
+
+Run the all-in-one script to convert images, reconstruct the scene, and export to COLMAP:
+
+```bash
+python scripts/e2e_quest_to_colmap.py \
+  --project_dir path/to/your/project \
+  --output_dir path/to/output/colmap_project \
+  --use_colored_pointcloud
+```
+
+### Option 2: Manual Pipeline
+
+#### Step 1: Convert Passthrough Images to RGB
 
 ```bash
 python scripts/convert_yuv_to_rgb.py \
@@ -48,7 +60,7 @@ This generates:
 
 ---
 
-### Step 2: Reconstruct 3D Scene
+#### Step 2: Reconstruct 3D Scene
 
 ```bash
 python scripts/reconstruct_scene.py \
@@ -74,7 +86,7 @@ Depending on your YAML config (`reconstruction:` section), the following additio
 
 ---
 
-### Step 3: Export COLMAP Project (Optional)
+#### Step 3: Export COLMAP Project (Optional)
 
 ```bash
 python scripts/build_colmap_project.py \
@@ -155,17 +167,6 @@ your_project/
 │   └── pipeline_config.yml
 ```
 
----
-
-## 📢 NOTICE (v1.1.0+)
-
-As of **Quest Reality Capture v1.1.0**, camera poses are now stored as **raw values** directly from the Android Camera2 API.
-If you're using older logs (v1.0.x), apply the following transformation:
-
-* **Translation**: `(x, y, z)` → `(x, y, -z)`
-* **Rotation** (quaternion): `(x, y, z, w)` → `(-x, -y, z, w)`
-
----
 
 ## 🧩 Third-Party Code
 
@@ -179,8 +180,3 @@ This project is licensed under the MIT License.
 See the [LICENSE](LICENSE) file for full text.
 
 ---
-
-## 📌 TODO
-
-* [ ] Implement carving to remove free-space artifacts
-* [ ] Add Nerfstudio export instructions
