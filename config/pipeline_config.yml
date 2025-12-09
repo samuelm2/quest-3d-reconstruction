@@ -24,7 +24,7 @@ reconstruction:
   optimize_color_pose: true  # Optimize the poses of color images via mesh-to-image alignment
   visualize_colored_mesh: false  # Visualize the colorized mesh after pose optimization
   sample_point_cloud_from_colored_mesh: true  # Sample a dense point cloud from the colored mesh
-  target_num_points: 100000  # Target number of points for COLMAP (-1 to use ratio instead)
+  target_num_points: 250000  # Target number of points for COLMAP (-1 to use ratio instead)
   points_per_vertex_ratio: 2.0  # Number of points to sample per mesh vertex (used only if target_num_points is -1)
   render_color_aligned_depth: true  # Render synthetic depth maps aligned to the color images
 
@@ -36,7 +36,7 @@ reconstruction:
     use_multi_threading: true  # Enable multi-threaded confidence computation
 
   fragment_generation:
-    fragment_size: 30  # Number of frames per fragment (adjusted for 3fps capture)
+    fragment_size: 20  # Number of frames per fragment (adjusted for 3fps capture)
     use_confidence_filtered_depth: true  # Use only confident depth pixels for pose estimation
     confidence_threshold: 0.05  # Minimum confidence score to keep a depth pixel
     valid_count_threshold: 2 # Minimum number of supporting observations required to consider a depth pixel valid
@@ -77,16 +77,16 @@ reconstruction:
     use_confidence_filtered_depth: true
     confidence_threshold: 0.05
     valid_count_threshold: 2
-    voxel_size: 0.01
+    voxel_size: 0.02
     block_resolution: 16
     block_count: 50000
     depth_max: 3.0
     trunc_voxel_multiplier: 8.0
 
   color_optimization:
-    weight_threshold: 3.0  # Minimum TSDF weight to retain voxel during optimization
-    estimated_vertex_number: 1000000  # Auto-compute vertex count (-1 = no limit)
-    interval: 40  # Use every 20th frame for color optimization to reduce memory with 1280x1280 images
+    weight_threshold: 3.0  # Minimum TSDF weight to retain voxel during optimization (increased from 3.0 for large point clouds)
+    estimated_vertex_number: -1  # Auto-compute vertex count (-1 = no limit, was 1000000 which may be too restrictive)
+    interval: 20  # Use every 20th frame for color optimization to reduce memory with 1280x1280 images
     max_iteration: 50  # Reduced iterations to save memory
     use_dataset_cache: false
 
