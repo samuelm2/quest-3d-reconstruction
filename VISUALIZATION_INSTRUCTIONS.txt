@@ -1,0 +1,10 @@
+To visualize the HMD poses:
+
+1. Ensure you have Python installed.
+2. Install dependencies:
+   pip install matplotlib numpy
+
+   Note: `mpl_toolkits` is included with `matplotlib`, so you do not need to install it separately.
+
+3. Run the script:
+   python visualize_poses.py

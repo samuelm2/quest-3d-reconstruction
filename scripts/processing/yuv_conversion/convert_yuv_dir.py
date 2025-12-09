@@ -17,10 +17,16 @@ def process_file(
     filter: Optional[Callable[[np.ndarray], bool]] = None,
 ) -> bool:
     try:
-        raw_data = image_io.load_yuv(side=side, timestamp=timestamp)
-        format_info = image_io.load_image_format_info(side=side)
-
-        bgr_img = convert_yuv420_888_to_bgr(raw_data=raw_data, format_info=format_info)
+        # Check if image is in QOI format (already RGB)
+        if image_io.is_qoi_format(side=side, timestamp=timestamp):
+            # Load QOI (returns RGB)
+            rgb_img = image_io.load_qoi(side=side, timestamp=timestamp)
+            bgr_img = rgb_img[:, :, ::-1]  # RGB to BGR
+        else:
+            # Load and convert YUV to BGR
+            raw_data = image_io.load_yuv(side=side, timestamp=timestamp)
+            format_info = image_io.load_image_format_info(side=side)
+            bgr_img = convert_yuv420_888_to_bgr(raw_data=raw_data, format_info=format_info)
 
         if filter is not None:
             if not filter(bgr_img):

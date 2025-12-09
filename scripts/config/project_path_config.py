@@ -86,7 +86,15 @@ class ImagePathConfig:
     
 
     def get_yuv_image_paths(self, side: Side) -> list[Path]:
+        """Get image paths, preferring QOI over YUV for backward compatibility"""
         yuv_dir = self.get_yuv_dir(side)
+        
+        # Try QOI files first (new format)
+        qoi_files = sorted(yuv_dir.glob("*.qoi"))
+        if qoi_files:
+            return qoi_files
+        
+        # Fallback to YUV files (legacy format)
         return sorted(yuv_dir.glob("*.yuv"))
     
 

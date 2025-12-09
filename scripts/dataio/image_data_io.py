@@ -12,6 +12,13 @@ from models.image_format_info import BaseTime, ImageFormatInfo, ImagePlaneInfo
 from models.side import Side
 from models.transforms import CoordinateSystem, Transforms
 
+try:
+    import qoi
+    QOI_AVAILABLE = True
+except ImportError:
+    QOI_AVAILABLE = False
+    print("[Warning] QOI library not installed. Install with: pip install qoi")
+
 
 class ImageDataIO:
     def __init__(self, image_path_config: ImagePathConfig):
@@ -37,9 +44,29 @@ class ImageDataIO:
 
     
     def load_yuv(self, side: Side, timestamp: int) -> np.ndarray:
+        """Load raw YUV image data (legacy format only)"""
         yuv_dir = self.image_path_config.get_yuv_dir(side=side)
-        file_path = yuv_dir / f'{timestamp}.yuv'
-        return np.fromfile(file_path, dtype=np.uint8)
+        yuv_path = yuv_dir / f'{timestamp}.yuv'
+        return np.fromfile(yuv_path, dtype=np.uint8)
+    
+    
+    def load_qoi(self, side: Side, timestamp: int) -> np.ndarray:
+        """Load QOI compressed image (returns RGB array)"""
+        if not QOI_AVAILABLE:
+            raise ImportError("QOI library not installed. Install with: pip install qoi")
+        
+        yuv_dir = self.image_path_config.get_yuv_dir(side=side)
+        qoi_path = yuv_dir / f'{timestamp}.qoi'
+        
+        # QOI library returns RGB numpy array
+        return qoi.read(str(qoi_path))
+    
+    
+    def is_qoi_format(self, side: Side, timestamp: int) -> bool:
+        """Check if image is stored in QOI format"""
+        yuv_dir = self.image_path_config.get_yuv_dir(side=side)
+        qoi_path = yuv_dir / f'{timestamp}.qoi'
+        return qoi_path.exists()
     
 
     def load_rgb(self, side: Side, timestamp: int) -> np.ndarray:
