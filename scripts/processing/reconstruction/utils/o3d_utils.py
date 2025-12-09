@@ -139,6 +139,14 @@ def load_depth_map(
             depth_np[confidence_map.confidence_map < confidence_threshold] = 0.0
             depth_np[confidence_map.valid_count < valid_count_threshold] = 0.0
 
+    # Check if there are any valid depth values remaining
+    valid_mask = depth_np > 0
+    num_valid = np.sum(valid_mask)
+    
+    if num_valid == 0:
+        # Skip frames with no valid depth data - they cause "No block is touched" errors
+        return None
+
     return o3d.t.geometry.Image(
         tensor=o3d.core.Tensor(
             depth_np,
