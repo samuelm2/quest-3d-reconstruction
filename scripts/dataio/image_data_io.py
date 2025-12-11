@@ -11,14 +11,7 @@ from models.camera_dataset import CameraDataset
 from models.image_format_info import BaseTime, ImageFormatInfo, ImagePlaneInfo
 from models.side import Side
 from models.transforms import CoordinateSystem, Transforms
-
-try:
-    import qoi
-    QOI_AVAILABLE = True
-except ImportError:
-    QOI_AVAILABLE = False
-    print("[Warning] QOI library not installed. Install with: pip install qoi")
-
+from qoi import QOIReader, QOIWriter
 
 class ImageDataIO:
     def __init__(self, image_path_config: ImagePathConfig):
@@ -35,7 +28,7 @@ class ImageDataIO:
 
     
     def get_rgb_timestamps(self, side: Side) -> list[int]:
-        rgb_files = self.image_path_config.get_rgb_image_paths(side=side)
+        rgb_files = self.image_path_config.get_rgb_image_paths(side=side)   
         return [
             int(rgb_file.stem)
             for rgb_file
@@ -52,9 +45,6 @@ class ImageDataIO:
     
     def load_qoi(self, side: Side, timestamp: int) -> np.ndarray:
         """Load QOI compressed image (returns RGB array)"""
-        if not QOI_AVAILABLE:
-            raise ImportError("QOI library not installed. Install with: pip install qoi")
-        
         yuv_dir = self.image_path_config.get_yuv_dir(side=side)
         qoi_path = yuv_dir / f'{timestamp}.qoi'
         
