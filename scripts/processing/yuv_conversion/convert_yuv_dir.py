@@ -7,13 +7,14 @@ from tqdm import tqdm
 from config.yuv_to_rgb_config import Yuv2RgbConfig
 from dataio.image_data_io import ImageDataIO
 from models.side import Side
-from utils.image_utils import convert_yuv420_888_to_bgr, is_blur_image, is_over_or_under_exposed
+from utils.image_utils import convert_yuv420_888_to_bgr, is_blur_image, is_over_or_under_exposed, apply_tone_mapping
 
 
 def process_file(
     side: Side,
     timestamp: int,
     image_io: ImageDataIO,
+    config: Yuv2RgbConfig,
     filter: Optional[Callable[[np.ndarray], bool]] = None,
 ) -> bool:
     try:
@@ -25,6 +26,16 @@ def process_file(
         if filter is not None:
             if not filter(bgr_img):
                 return False
+        
+        # Apply tone mapping if enabled
+        if config.tone_mapping:
+            bgr_img = apply_tone_mapping(
+                bgr_img,
+                method=config.tone_mapping_method,
+                clip_limit=config.clahe_clip_limit,
+                tile_grid_size=(config.clahe_tile_grid_size, config.clahe_tile_grid_size),
+                gamma=config.gamma_correction
+            )
             
         image_io.save_bgr(bgr=bgr_img, side=side, timestamp=timestamp)
 
@@ -67,7 +78,7 @@ def convert_yuv_directory(
 
         with ProcessPoolExecutor() as executor:
             futures = [
-                executor.submit(process_file, side, yuv_timestamp, image_io, filter)
+                executor.submit(process_file, side, yuv_timestamp, image_io, config, filter)
                 for yuv_timestamp in yuv_timestamps
             ]
             for future in tqdm(as_completed(futures), total=len(futures), desc=f"Converting YUV to PNG ({side})"):
@@ -90,3 +101,6 @@ def convert_yuv_directory(
 
         if exception_count > 0:
             print(f"[Error] {exception_count} files failed due to exceptions.")
+        
+        if config.tone_mapping:
+            print(f"[Info] Tone mapping applied: method={config.tone_mapping_method}")

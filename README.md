@@ -84,6 +84,8 @@ Depending on your YAML config (`reconstruction:` section), the following additio
 | `render_color_aligned_depth: true`           | Depth images aligned to RGB frames                                       |
 | `color_aligned_depth_rendering.only_use_optimized_dataset: true` | Only aligned for optimized color dataset                                 |
 
+**💡 Tip:** For better color quality in your point cloud, adjust `color_optimization.interval` in the config. Lower values (e.g., `interval: 2`) use more frames for coloring and produce better results, at the cost of higher memory usage and longer processing time.
+
 ---
 
 #### Step 3: Export COLMAP Project (Optional)
@@ -148,6 +150,62 @@ Explore:
 
 * `scripts/dataio/` for loadable datasets
 * `scripts/models/` for internal data structures
+
+---
+
+## 🎨 Tone Mapping for High Dynamic Range Scenes
+
+If your capture has bright windows and dark interiors (causing blown-out highlights and underexposed shadows), you can apply **CLAHE tone mapping** to improve color quality.
+
+### Enable During Pipeline (Recommended for New Captures)
+
+Edit `config/pipeline_config.yml`:
+
+```yaml
+yuv_to_rgb:
+  tone_mapping: true              # Enable tone mapping
+  tone_mapping_method: "clahe"    # Options: "clahe", "gamma", "clahe+gamma"
+  clahe_clip_limit: 2.0           # Contrast enhancement (1.0-4.0, higher = more contrast)
+  clahe_tile_grid_size: 6         # Grid size for local adaptation (4-16, smaller = more aggressive)
+  gamma_correction: 1.2           # Brightness adjustment (>1 brightens)
+```
+
+Then run the pipeline normally - tone mapping is applied automatically during YUV→RGB conversion.
+
+### Apply to Existing RGB Images (After Processing)
+
+If you already have RGB images and want to improve them:
+
+```bash
+python scripts/apply_tone_mapping.py \
+  --project_dir path/to/your/project \
+  --method clahe \
+  --clip_limit 2.5 \
+  --tile_grid_size 6 \
+  --backup
+```
+
+Then re-run color optimization only:
+
+```bash
+python scripts/e2e_quest_to_colmap.py \
+  --project_dir path/to/your/project \
+  --output_dir path/to/output \
+  --skip_yuv_conversion \
+  --skip_reconstruction \
+  --use_colored_pointcloud
+```
+
+### Parameter Tuning
+
+- **`clip_limit`**: Higher values (2.5-3.5) = more aggressive contrast enhancement. Use for very bright windows.
+- **`tile_grid_size`**: Smaller values (4-6) = more local adaptation for large bright/dark regions. Larger values (12-16) = smoother, more subtle effect.
+- **`method`**: 
+  - `clahe` - Best for mixed lighting (recommended)
+  - `gamma` - Simple global brightening
+  - `clahe+gamma` - Maximum detail recovery for extreme cases
+
+**Note:** Tone-mapped images work great for both point cloud coloring and Gaussian Splatting training!
 
 ---
 

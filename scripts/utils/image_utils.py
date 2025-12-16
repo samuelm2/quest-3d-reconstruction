@@ -88,3 +88,86 @@ def is_blur_image(img_bgr, blur_threshold=50.0):
     blur_score = measure_blur_laplacian(img_gray)
 
     return blur_score < blur_threshold
+
+
+def apply_clahe_tone_mapping(img_bgr, clip_limit=2.0, tile_grid_size=(8, 8)):
+    """
+    Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) tone mapping.
+    
+    This is excellent for high dynamic range scenes with bright windows and dark interiors.
+    
+    Args:
+        img_bgr: Input BGR image
+        clip_limit: Threshold for contrast limiting (higher = more contrast)
+        tile_grid_size: Size of grid for histogram equalization
+    
+    Returns:
+        Tone-mapped BGR image
+    """
+    # Convert BGR to LAB color space (L=lightness, A/B=color channels)
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l_channel, a_channel, b_channel = cv2.split(lab)
+    
+    # Apply CLAHE to L channel only (preserve color information)
+    clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=tile_grid_size)
+    l_channel_clahe = clahe.apply(l_channel)
+    
+    # Merge back and convert to BGR
+    lab_clahe = cv2.merge([l_channel_clahe, a_channel, b_channel])
+    img_bgr_clahe = cv2.cvtColor(lab_clahe, cv2.COLOR_LAB2BGR)
+    
+    return img_bgr_clahe
+
+
+def apply_gamma_correction(img_bgr, gamma=1.2):
+    """
+    Apply gamma correction to brighten dark areas.
+    
+    Args:
+        img_bgr: Input BGR image
+        gamma: Gamma value (>1 brightens, <1 darkens)
+    
+    Returns:
+        Gamma-corrected BGR image
+    """
+    # Build lookup table
+    inv_gamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in range(256)]).astype(np.uint8)
+    
+    # Apply gamma correction
+    return cv2.LUT(img_bgr, table)
+
+
+def apply_tone_mapping(img_bgr, method="clahe", **kwargs):
+    """
+    Apply tone mapping to improve dynamic range.
+    
+    Args:
+        img_bgr: Input BGR image
+        method: "clahe", "gamma", or "clahe+gamma"
+        **kwargs: Additional parameters for the specific method
+    
+    Returns:
+        Tone-mapped BGR image
+    """
+    if method == "clahe":
+        clip_limit = kwargs.get("clip_limit", 2.0)
+        tile_grid_size = kwargs.get("tile_grid_size", (8, 8))
+        return apply_clahe_tone_mapping(img_bgr, clip_limit, tile_grid_size)
+    
+    elif method == "gamma":
+        gamma = kwargs.get("gamma", 1.2)
+        return apply_gamma_correction(img_bgr, gamma)
+    
+    elif method == "clahe+gamma":
+        # First apply CLAHE for local contrast
+        clip_limit = kwargs.get("clip_limit", 2.0)
+        tile_grid_size = kwargs.get("tile_grid_size", (8, 8))
+        img_bgr = apply_clahe_tone_mapping(img_bgr, clip_limit, tile_grid_size)
+        
+        # Then apply mild gamma correction for overall brightness
+        gamma = kwargs.get("gamma", 1.1)
+        return apply_gamma_correction(img_bgr, gamma)
+    
+    else:
+        raise ValueError(f"Unknown tone mapping method: {method}")

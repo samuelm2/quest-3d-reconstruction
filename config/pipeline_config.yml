@@ -4,6 +4,13 @@ yuv_to_rgb:
   exposure_filter: false       # Enable image exposure filtering
   exposure_threshold_low: 0.05  # Underexposure detection threshold
   exposure_threshold_high: 0.05 # Overexposure detection threshold
+  
+  # Tone mapping for high dynamic range scenes (bright windows + dark interiors)
+  tone_mapping: false    # Enable tone mapping during YUV conversion
+  tone_mapping_method: "clahe"  # Options: "clahe", "gamma", "clahe+gamma"
+  clahe_clip_limit: 2.0  # CLAHE contrast limiting (higher = more contrast)
+  clahe_tile_grid_size: 8  # CLAHE tile size (creates NxN grid for local adaptation)
+  gamma_correction: 1.2  # Gamma value for brightening (>1 brightens, <1 darkens)
 
 depth_to_linear:
   clip_near_m: 0.1 # Near clipping distance in meters for linear depth visualization
